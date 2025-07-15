@@ -5,6 +5,7 @@ import IssueDetailsModal from '../../components/IssueDetailsModal';
 import { useIssues } from '../../hooks/useIssues';
 import { Colors } from '../../constants/Colors.jsx';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUser } from '@clerk/clerk-expo';
 
 // Remove the static issueData as we'll use the hook
 
@@ -33,7 +34,9 @@ export default function AllWorkScreen() {
   const [isIssueDetailsModalVisible, setIsIssueDetailsModalVisible] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState(null);
   
-  const { issues, updateIssue, addComment, addTimeLog, addAttachment } = useIssues();
+  const { issues, updateIssue, addComment, addTimeLog, addAttachment, addDecisionLogToIssue } = useIssues();
+  const { user } = useUser();
+  const userName = user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress || 'anonymous';
 
   const filters = ['All', 'My Work', 'Recent', 'Overdue'];
 
@@ -165,6 +168,8 @@ export default function AllWorkScreen() {
         onAddComment={addComment}
         onAddTimeLog={addTimeLog}
         onAddAttachment={addAttachment}
+        addDecisionLogToIssue={addDecisionLogToIssue}
+        userName={userName}
       />
     </SafeAreaView>
   );

@@ -62,6 +62,7 @@ export const useIssues = () => {
           date: new Date('2024-01-19'),
         },
       ],
+      decisionLog: [], // Add decisionLog
     },
     {
       id: '2',
@@ -87,6 +88,7 @@ export const useIssues = () => {
       comments: [],
       attachments: [],
       timeLogs: [],
+      decisionLog: [],
     },
     {
       id: '3',
@@ -135,6 +137,7 @@ export const useIssues = () => {
           date: new Date('2024-01-12'),
         },
       ],
+      decisionLog: [],
     },
     {
       id: '4',
@@ -175,6 +178,7 @@ export const useIssues = () => {
           date: new Date('2024-01-20'),
         },
       ],
+      decisionLog: [],
     },
     {
       id: '5',
@@ -200,6 +204,7 @@ export const useIssues = () => {
       comments: [],
       attachments: [],
       timeLogs: [],
+      decisionLog: [],
     },
   ]);
 
@@ -213,6 +218,7 @@ export const useIssues = () => {
       comments: [],
       attachments: [],
       timeLogs: [],
+      decisionLog: [], // Add decisionLog
       ...issue,
     };
     setIssues(prev => [newIssue, ...prev]);
@@ -290,6 +296,25 @@ export const useIssues = () => {
     );
   }, []);
 
+  // Add a decision log entry to an issue
+  const addDecisionLogToIssue = useCallback((issueId, entry) => {
+    setIssues(prevIssues => prevIssues.map(issue =>
+      issue.id === issueId
+        ? {
+            ...issue,
+            decisionLog: [
+              ...issue.decisionLog,
+              {
+                id: `log-${Date.now()}`,
+                ...entry,
+                createdAt: Date.now(),
+              },
+            ],
+          }
+        : issue
+    ));
+  }, []);
+
   const getIssueById = useCallback((id) => {
     return issues.find(issue => issue.id === id);
   }, [issues]);
@@ -328,6 +353,7 @@ export const useIssues = () => {
     addComment,
     addTimeLog,
     addAttachment,
+    addDecisionLogToIssue,
     getIssueById,
     getIssuesBySprint,
     getIssuesByProject,

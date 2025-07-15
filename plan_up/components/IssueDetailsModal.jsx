@@ -23,6 +23,8 @@ export default function IssueDetailsModal({
   onAddComment,
   onAddTimeLog,
   onAddAttachment,
+  addDecisionLogToIssue = () => {}, // Add this prop
+  userName = 'anonymous',
   epics = [],
   sprints = [],
 }) {
@@ -34,12 +36,17 @@ export default function IssueDetailsModal({
   const [timeLogHours, setTimeLogHours] = useState('');
   const [timeLogDescription, setTimeLogDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [decisionLogText, setDecisionLogText] = useState('');
+  const [decisionLogLoading, setDecisionLogLoading] = useState(false);
+  const [decisionLogError, setDecisionLogError] = useState('');
+  // Remove: const userEmail = 'Current User';
 
   const tabs = [
     { key: 'details', label: 'Details', icon: 'document' },
     { key: 'comments', label: 'Comments', icon: 'chatbubbles' },
     { key: 'time', label: 'Time', icon: 'time' },
     { key: 'attachments', label: 'Attachments', icon: 'attach' },
+    { key: 'decisionLog', label: 'Decision Log', icon: 'book' }, // Add tab
   ];
 
   const priorityColors = {
@@ -405,6 +412,79 @@ export default function IssueDetailsModal({
     </View>
   );
 
+  const renderDecisionLog = () => (
+    <View style={styles.tabContent}>
+      <FlatList
+        data={issue?.decisionLog || []}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={[styles.commentItem, { backgroundColor: colors.white }]}> {/* Reuse commentItem style */}
+            <View style={styles.commentHeader}>
+              <Text style={[styles.commentAuthor, { color: colors.text }]}>{item.author}</Text>
+              <Text style={[styles.commentTime, { color: colors.textSecondary }]}> {formatDateTime(item.createdAt)} </Text>
+            </View>
+            <Text style={[styles.commentContent, { color: colors.text }]}>{item.content}</Text>
+          </View>
+        )}
+        ListFooterComponent={
+          <View style={styles.addCommentSection}>
+            <TextInput
+              style={[
+                styles.commentInput,
+                {
+                  backgroundColor: colors.white,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={decisionLogText}
+              onChangeText={setDecisionLogText}
+              placeholder="Add context, rationale, or decision..."
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              numberOfLines={3}
+            />
+            {decisionLogError ? <Text style={{ color: 'red' }}>{decisionLogError}</Text> : null}
+            <TouchableOpacity
+              style={[
+                styles.addButton,
+                {
+                  backgroundColor: decisionLogLoading ? colors.textSecondary : colors.coral,
+                },
+              ]}
+              onPress={async () => {
+                if (!decisionLogText.trim()) {
+                  setDecisionLogError('Please enter a decision/context.');
+                  return;
+                }
+                setDecisionLogLoading(true);
+                setDecisionLogError('');
+                try {
+                  await addDecisionLogToIssue(issue.id, {
+                    author: userName,
+                    content: decisionLogText.trim(),
+                  });
+                  setDecisionLogText('');
+                } catch (e) {
+                  setDecisionLogError('Failed to add entry.');
+                } finally {
+                  setDecisionLogLoading(false);
+                }
+              }}
+              disabled={decisionLogLoading}
+            >
+              {decisionLogLoading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.addButtonText}>Add Entry</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        }
+      />
+    </View>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'details':
@@ -415,6 +495,8 @@ export default function IssueDetailsModal({
         return renderTimeLogs();
       case 'attachments':
         return renderAttachments();
+      case 'decisionLog':
+        return renderDecisionLog();
       default:
         return renderDetails();
     }

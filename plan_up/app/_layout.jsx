@@ -13,6 +13,8 @@ import { OrganizationProvider } from '../components/OrganizationContext.jsx';
 import { useUser } from '@clerk/clerk-expo';
 import OrganizationProviderWrapper from './OrganizationProviderWrapper';
 import { IdeaProvider } from '../components/IdeaContext.jsx';
+import { View } from 'react-native';
+import CustomDrawerContent from '../components/CustomDrawerContent';
 
 // Import screens
 import HomeScreen from './(tabs)/index.jsx';
@@ -85,8 +87,13 @@ export default function RootLayout() {
         <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
           <OrganizationProviderWrapper>
             <AppProviders>
+              {/* Animated background for Drawer */}
+              <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 320, zIndex: 0 }} pointerEvents="none">
+                {/* Optionally add animated shapes or opacity here for more effect */}
+              </View>
               <Drawer.Navigator
                 initialRouteName="Main"
+                drawerContent={props => <CustomDrawerContent {...props} />}
                 screenOptions={{
                   headerShown: true,
                 }}

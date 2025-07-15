@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { useState } from 'react';
 import { Colors } from '../../constants/Colors.jsx';
 import { useColorScheme } from 'react-native';
@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import ReportsModal from '../../components/ReportsModal';
 import { useIssues } from '../../hooks/useIssues';
 import { useSprints } from '../../hooks/useSprints';
+import { useUser } from '@clerk/clerk-expo';
+import { RetrospectiveProvider, useRetrospective } from '../../components/RetrospectiveContext';
 
 export default function DashboardScreen() {
   const colorScheme = useColorScheme();
@@ -14,6 +16,8 @@ export default function DashboardScreen() {
   
   const { issues } = useIssues();
   const { sprints } = useSprints();
+  const { user } = useUser();
+  const userName = user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress || 'anonymous';
 
   const metrics = [
     { title: 'Total Issues', value: '156', icon: 'list', color: colors.coral },
@@ -67,8 +71,115 @@ export default function DashboardScreen() {
     }
   ];
 
+  // Personal Focus & Burnout Prevention Section
+  const myIssues = issues.filter(issue => issue.assignee === userName);
+  const overdue = myIssues.filter(issue => new Date(issue.dueDate) < new Date() && issue.status !== 'Done');
+  const inProgress = myIssues.filter(issue => issue.status === 'In Progress');
+  const totalEstimated = myIssues.reduce((sum, i) => sum + (i.estimatedHours || 0), 0);
+  const totalLogged = myIssues.reduce((sum, i) => sum + (i.loggedHours || 0), 0);
+  const workloadLevel = myIssues.length > 7 || totalEstimated > 40 ? 'High' : myIssues.length > 3 ? 'Moderate' : 'Low';
+  const burnoutRisk = workloadLevel === 'High' || overdue.length > 2 ? 'At Risk' : 'Healthy';
+  const focusSuggestions = [];
+  if (burnoutRisk === 'At Risk') focusSuggestions.push('Consider taking a break or reprioritizing tasks.');
+  if (overdue.length > 0) focusSuggestions.push('You have overdue tasks. Address them soon.');
+  if (workloadLevel === 'High') focusSuggestions.push('Your workload is high. Try to delegate or reschedule some tasks.');
+  if (workloadLevel === 'Low') focusSuggestions.push('Great job! Your workload is manageable.');
+
+  // --- Continuous Retrospective Section ---
+  function RetrospectiveSection() {
+    const { feedback, addFeedback, resolveFeedback, unresolveFeedback } = useRetrospective();
+    const [type, setType] = useState('Went Well');
+    const [text, setText] = useState('');
+    const [error, setError] = useState('');
+
+    const handleAdd = () => {
+      if (!text.trim()) {
+        setError('Feedback cannot be empty.');
+        return;
+      }
+      addFeedback(type, text);
+      setText('');
+      setError('');
+    };
+
+    const feedbackTypes = ['Went Well', 'To Improve', 'Action Item'];
+    const unresolved = feedback.filter(f => !f.resolved);
+    const recent = feedback.slice(0, 5);
+
+    return (
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Continuous Retrospective</Text>
+        <View style={[styles.focusCard, { backgroundColor: colors.white, marginBottom: 10 }]}> 
+          <Text style={{ fontWeight: 'bold', color: colors.coral, marginBottom: 4 }}>Share feedback or action items at any time:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
+            {feedbackTypes.map(ft => (
+              <TouchableOpacity
+                key={ft}
+                style={{
+                  minWidth: 100,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 12,
+                  backgroundColor: type === ft ? colors.coral : colors.background,
+                  marginRight: 8,
+                  borderWidth: 1,
+                  borderColor: colors.coral,
+                }}
+                onPress={() => setType(ft)}
+              >
+                <Text style={{ color: type === ft ? '#fff' : colors.coral, fontWeight: '600' }}>{ft}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TextInput
+              style={{ flex: 1, borderWidth: 1, borderColor: colors.coral, borderRadius: 8, padding: 8, marginRight: 8, color: colors.text }}
+              placeholder={`Add ${type.toLowerCase()}...`}
+              placeholderTextColor={colors.textSecondary}
+              value={text}
+              onChangeText={setText}
+            />
+            <TouchableOpacity onPress={handleAdd} style={{ backgroundColor: colors.coral, borderRadius: 8, padding: 10 }}>
+              <Ionicons name="add" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+          {error ? <Text style={{ color: colors.coral, marginTop: 4 }}>{error}</Text> : null}
+        </View>
+        <Text style={{ fontWeight: 'bold', color: colors.text, marginBottom: 4 }}>Recent Feedback:</Text>
+        {recent.length === 0 && <Text style={{ color: colors.textSecondary }}>No feedback yet.</Text>}
+        {recent.map(f => (
+          <View key={f.id} style={{ backgroundColor: colors.background, borderRadius: 8, padding: 8, marginBottom: 6, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.coral, fontWeight: 'bold' }}>{f.type}</Text>
+              <Text style={{ color: colors.text }}>{f.text}</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>By {f.author} • {new Date(f.createdAt).toLocaleString()}</Text>
+            </View>
+            {f.type === 'Action Item' && (
+              <TouchableOpacity
+                onPress={() => f.resolved ? unresolveFeedback(f.id) : resolveFeedback(f.id)}
+                style={{ marginLeft: 8 }}
+              >
+                <Ionicons name={f.resolved ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={f.resolved ? '#4ECDC4' : colors.coral} />
+              </TouchableOpacity>
+            )}
+          </View>
+        ))}
+        {unresolved.some(f => f.type === 'Action Item') && (
+          <View style={{ marginTop: 8 }}>
+            <Text style={{ fontWeight: 'bold', color: colors.coral, marginBottom: 2 }}>Unresolved Action Items:</Text>
+            {unresolved.filter(f => f.type === 'Action Item').map(f => (
+              <Text key={f.id} style={{ color: colors.textSecondary, marginBottom: 2 }}>• {f.text}</Text>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  }
+
   return (
-    <>
+    <RetrospectiveProvider userEmail={userName}>
       <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header (now scrollable, improved alignment) */}
         <View style={styles.header}>
@@ -222,6 +333,36 @@ export default function DashboardScreen() {
             ))}
         </View>
               </View>
+
+      {/* Personal Focus & Burnout Prevention */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Personal Focus & Burnout Prevention</Text>
+        <View style={[styles.focusCard, { backgroundColor: colors.white }]}> 
+          <Text style={{ fontWeight: 'bold', color: colors.coral, marginBottom: 4 }}>Hi {userName}, here’s your current focus:</Text>
+          <Text style={{ color: colors.text, marginBottom: 8 }}>Assigned Issues: {myIssues.length}</Text>
+          <Text style={{ color: colors.text, marginBottom: 8 }}>Overdue: {overdue.length}</Text>
+          <Text style={{ color: colors.text, marginBottom: 8 }}>Estimated Hours: {totalEstimated}</Text>
+          <Text style={{ color: colors.text, marginBottom: 8 }}>Logged Hours: {totalLogged}</Text>
+          <Text style={{ color: colors.text, marginBottom: 8 }}>Workload: {workloadLevel}</Text>
+          <Text style={{ color: burnoutRisk === 'At Risk' ? colors.coral : '#4ECDC4', fontWeight: 'bold', marginBottom: 8 }}>Burnout Risk: {burnoutRisk}</Text>
+          {focusSuggestions.map((s, i) => (
+            <Text key={i} style={{ color: colors.textSecondary, marginBottom: 2 }}>• {s}</Text>
+          ))}
+        </View>
+        {myIssues.length > 0 && (
+          <View style={[styles.focusList, { backgroundColor: colors.white, marginTop: 10, borderRadius: 8, padding: 10 }]}> 
+            <Text style={{ fontWeight: 'bold', color: colors.text, marginBottom: 6 }}>Your Assigned Issues:</Text>
+            {myIssues.map(issue => (
+              <View key={issue.id} style={{ marginBottom: 8 }}>
+                <Text style={{ color: colors.coral, fontWeight: 'bold' }}>{issue.key}: {issue.title}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Due: {new Date(issue.dueDate).toLocaleDateString()} | Status: {issue.status}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+      {/* Continuous Retrospective Section */}
+      <RetrospectiveSection />
       </ScrollView>
 
       <ReportsModal
@@ -230,7 +371,7 @@ export default function DashboardScreen() {
         sprints={sprints}
         onClose={() => setIsReportsModalVisible(false)}
       />
-    </>
+    </RetrospectiveProvider>
   );
 }
 
@@ -530,5 +671,25 @@ const styles = StyleSheet.create({
     fontSize: 11,
     opacity: 0.6,
     marginLeft: 8,
+  },
+  focusCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3.84,
+    elevation: 3,
+  },
+  focusList: {
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
 }); 
