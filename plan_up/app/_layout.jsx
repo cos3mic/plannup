@@ -8,6 +8,11 @@ import { ClerkProvider } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Constants from 'expo-constants';
+import ErrorBoundary from '../components/ErrorBoundary.jsx';
+import { OrganizationProvider } from '../components/OrganizationContext.jsx';
+import { useUser } from '@clerk/clerk-expo';
+import OrganizationProviderWrapper from './OrganizationProviderWrapper';
+import { IdeaProvider } from '../components/IdeaContext.jsx';
 
 // Import screens
 import HomeScreen from './(tabs)/index.jsx';
@@ -17,6 +22,8 @@ import AllWorkScreen from './(tabs)/allwork.jsx';
 import SprintsScreen from './(tabs)/sprints.jsx';
 import NotificationScreen from './(tabs)/notification.jsx';
 import SettingsScreen from './(tabs)/settings.jsx';
+import OrganizationManagement from '../components/OrganizationManagement.jsx';
+import IdeasScreen from './(tabs)/ideas.jsx';
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
@@ -44,6 +51,7 @@ function MainTabs() {
           else if (route.name === 'Projects') iconName = 'folder';
           else if (route.name === 'Dashboard') iconName = 'grid';
           else if (route.name === 'All Work') iconName = 'list';
+          else if (route.name === 'Ideas') iconName = 'bulb';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
       })}
@@ -52,27 +60,47 @@ function MainTabs() {
       <Tab.Screen name="Projects" component={ProjectScreen} />
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="All Work" component={AllWorkScreen} />
+      <Tab.Screen name="Ideas" component={IdeasScreen} />
     </Tab.Navigator>
   );
 }
 
-export default function AppLayout() {
+function AppProviders({ children }) {
+  const { user } = useUser();
+  const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || 'anonymous';
+  return (
+    <OrganizationProvider userEmail={userEmail}>
+      <IdeaProvider userEmail={userEmail}>
+        {children}
+      </IdeaProvider>
+    </OrganizationProvider>
+  );
+}
+
+export default function RootLayout() {
   const publishableKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
-        <Drawer.Navigator
-          initialRouteName="Main"
-          screenOptions={{
-            headerShown: true,
-          }}
-        >
-          <Drawer.Screen name="Main" component={MainTabs} options={{ title: 'Main' }} />
-          <Drawer.Screen name="Sprints" component={SprintsScreen} />
-          <Drawer.Screen name="Notifications" component={NotificationScreen} />
-          <Drawer.Screen name="Settings" component={SettingsScreen} />
-        </Drawer.Navigator>
-      </ClerkProvider>
+      <ErrorBoundary>
+        <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
+          <OrganizationProviderWrapper>
+            <AppProviders>
+              <Drawer.Navigator
+                initialRouteName="Main"
+                screenOptions={{
+                  headerShown: true,
+                }}
+              >
+                <Drawer.Screen name="Main" component={MainTabs} options={{ title: 'Main' }} />
+                <Drawer.Screen name="Organization" component={OrganizationManagement} />
+                <Drawer.Screen name="Sprints" component={SprintsScreen} />
+                <Drawer.Screen name="Notifications" component={NotificationScreen} />
+                <Drawer.Screen name="Settings" component={SettingsScreen} />
+              </Drawer.Navigator>
+            </AppProviders>
+          </OrganizationProviderWrapper>
+        </ClerkProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

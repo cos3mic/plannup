@@ -6,6 +6,7 @@ import BacklogModal from '../../components/BacklogModal';
 import { useSprints } from '../../hooks/useSprints';
 import { useIssues } from '../../hooks/useIssues';
 import { Colors } from '../../constants/Colors.jsx';
+import { useOrganizationCustom } from '../../components/OrganizationContext';
 
 const initialProjectData = [
   {
@@ -51,6 +52,8 @@ export default function ProjectScreen() {
   
   const { sprints, addIssueToSprint } = useSprints();
   const { issues, updateIssue } = useIssues();
+  const { currentOrg } = useOrganizationCustom();
+  const isAdmin = true; // fallback: treat all users as admin for now
 
   const handleProjectCreated = (newProject) => {
     setProjects(prevProjects => [...prevProjects, newProject]);
@@ -99,21 +102,23 @@ export default function ProjectScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Projects</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            style={[styles.headerButton, { borderColor: colors.coral }]}
-            onPress={() => setIsBacklogModalVisible(true)}
-          >
-            <Ionicons name="list" size={20} color={colors.coral} />
-            <Text style={[styles.headerButtonText, { color: colors.coral }]}>Backlog</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.addButton, { backgroundColor: colors.coral }]}
-            onPress={() => setIsCreateProjectModalVisible(true)}
-          >
-            <Ionicons name="add" size={24} color={colors.white} />
-          </TouchableOpacity>
-        </View>
+        {isAdmin && (
+          <View style={styles.headerButtons}>
+            <TouchableOpacity 
+              style={[styles.headerButton, { borderColor: colors.coral }]}
+              onPress={() => setIsBacklogModalVisible(true)}
+            >
+              <Ionicons name="list" size={20} color={colors.coral} />
+              <Text style={[styles.headerButtonText, { color: colors.coral }]}>Backlog</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.addButton, { backgroundColor: colors.coral }]}
+              onPress={() => setIsCreateProjectModalVisible(true)}
+            >
+              <Ionicons name="add" size={24} color={colors.white} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <FlatList

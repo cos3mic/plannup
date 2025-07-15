@@ -69,11 +69,11 @@ export default function DashboardScreen() {
 
   return (
     <>
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}> 
-        {/* Header (now scrollable) */}
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Header (now scrollable, improved alignment) */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Dashboard</Text>
-          <View style={styles.headerButtons}>
+          <View style={styles.headerButtonsRow}>
             <TouchableOpacity 
               style={[styles.reportsButton, { borderColor: colors.coral }]}
               onPress={() => setIsReportsModalVisible(true)}
@@ -81,29 +81,29 @@ export default function DashboardScreen() {
               <Ionicons name="analytics" size={20} color={colors.coral} />
               <Text style={[styles.reportsButtonText, { color: colors.coral }]}>Reports</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.filterButton, { borderColor: colors.blue }]}> 
+            <TouchableOpacity style={[styles.filterButton, { borderColor: colors.blue }]}>
               <Ionicons name="filter" size={20} color={colors.blue} />
               <Text style={[styles.filterText, { color: colors.blue }]}>Filter</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Metrics Grid */}
+      {/* Metrics Grid */}
         <View style={styles.metricsGridWrapper}>
           <View style={styles.metricsGridRow}>
             {metrics.slice(0, 2).map((metric, index) => (
               <View key={index} style={[styles.metricCard, { backgroundColor: colors.white, marginRight: index === 0 ? 12 : 0 }]}> 
-                <View style={styles.metricContent}>
-                  <View style={[styles.metricIcon, { backgroundColor: metric.color + '20' }]}> 
-                    <Ionicons name={metric.icon} size={20} color={metric.color} />
-                  </View>
-                  <View style={styles.metricText}>
-                    <Text style={[styles.metricValue, { color: colors.text }]}>{metric.value}</Text>
-                    <Text style={[styles.metricTitle, { color: colors.text }]}>{metric.title}</Text>
-                  </View>
-                </View>
+            <View style={styles.metricContent}>
+              <View style={[styles.metricIcon, { backgroundColor: metric.color + '20' }]}>
+                <Ionicons name={metric.icon} size={20} color={metric.color} />
               </View>
-            ))}
+              <View style={styles.metricText}>
+                <Text style={[styles.metricValue, { color: colors.text }]}>{metric.value}</Text>
+                <Text style={[styles.metricTitle, { color: colors.text }]}>{metric.title}</Text>
+              </View>
+            </View>
+          </View>
+        ))}
           </View>
           <View style={styles.metricsGridRow}>
             {metrics.slice(2, 4).map((metric, index) => (
@@ -120,108 +120,108 @@ export default function DashboardScreen() {
               </View>
             ))}
           </View>
-        </View>
+      </View>
 
-        {/* Sprint Progress */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Active Sprints</Text>
-          {recentSprints.map((sprint, index) => (
+      {/* Sprint Progress */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Active Sprints</Text>
+        {recentSprints.map((sprint, index) => (
             <View key={index} style={[styles.sprintCard, { backgroundColor: colors.white, marginBottom: 14 }]}> 
-              <View style={styles.sprintHeader}>
-                <Text style={[styles.sprintName, { color: colors.text }]}>{sprint.name}</Text>
-                <Text style={[styles.sprintDays, { color: colors.coral }]}> 
-                  {sprint.daysLeft > 0 ? `${sprint.daysLeft} days left` : 'Completed'}
-                </Text>
+            <View style={styles.sprintHeader}>
+              <Text style={[styles.sprintName, { color: colors.text }]}>{sprint.name}</Text>
+              <Text style={[styles.sprintDays, { color: colors.coral }]}>
+                {sprint.daysLeft > 0 ? `${sprint.daysLeft} days left` : 'Completed'}
+              </Text>
+            </View>
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { 
+                      width: `${sprint.progress}%`,
+                      backgroundColor: sprint.progress === 100 ? '#4ECDC4' : colors.coral 
+                    }
+                  ]} 
+                />
               </View>
-              <View style={styles.progressContainer}>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressFill, 
-                      { 
-                        width: `${sprint.progress}%`,
-                        backgroundColor: sprint.progress === 100 ? '#4ECDC4' : colors.coral 
-                      }
-                    ]} 
-                  />
+              <Text style={[styles.progressText, { color: colors.text }]}>{sprint.progress}%</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      {/* Team Analytics */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>Team Analytics</Text>
+          <TouchableOpacity style={[styles.viewAllButton, { borderColor: colors.blue }]}>
+            <Text style={[styles.viewAllText, { color: colors.blue }]}>View All</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={[styles.analyticsCard, { backgroundColor: colors.white }]}>
+          {teamAnalytics.map((member, index) => (
+              <View key={index} style={[styles.analyticsItem, { marginBottom: index === teamAnalytics.length - 1 ? 0 : 18 }]}> 
+              <View style={styles.memberInfo}>
+                <View style={[styles.avatar, { backgroundColor: member.color }]}>
+                  <Text style={styles.avatarText}>{member.avatar}</Text>
                 </View>
-                <Text style={[styles.progressText, { color: colors.text }]}>{sprint.progress}%</Text>
+                <View style={styles.memberDetails}>
+                  <Text style={[styles.memberName, { color: colors.text }]}>{member.name}</Text>
+                  <Text style={[styles.memberStatus, { color: colors.textSecondary }]}>
+                    Last active: {member.lastActive}
+                  </Text>
+                </View>
+                {member.name === 'John Doe' && (
+                  <TouchableOpacity 
+                      style={[styles.updateButton, { backgroundColor: colors.blue, marginLeft: 8 }]}
+                    onPress={() => Alert.alert('Update Progress', 'Update your progress here')}
+                  >
+                    <Text style={styles.updateButtonText}>Update</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={styles.analyticsStats}>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: colors.coral }]}>{member.issuesCompleted}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Completed</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: colors.blue }]}>{member.issuesInProgress}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>In Progress</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: member.productivity > 80 ? '#4ECDC4' : '#FF6B6B' }]}>
+                    {member.productivity}%
+                  </Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Productivity</Text>
+                </View>
               </View>
             </View>
           ))}
         </View>
+      </View>
 
-        {/* Team Analytics */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>Team Analytics</Text>
-            <TouchableOpacity style={[styles.viewAllButton, { borderColor: colors.blue }]}> 
-              <Text style={[styles.viewAllText, { color: colors.blue }]}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={[styles.analyticsCard, { backgroundColor: colors.white }]}> 
-            {teamAnalytics.map((member, index) => (
-              <View key={index} style={[styles.analyticsItem, { marginBottom: index === teamAnalytics.length - 1 ? 0 : 18 }]}> 
-                <View style={styles.memberInfo}>
-                  <View style={[styles.avatar, { backgroundColor: member.color }]}> 
-                    <Text style={styles.avatarText}>{member.avatar}</Text>
-                  </View>
-                  <View style={styles.memberDetails}>
-                    <Text style={[styles.memberName, { color: colors.text }]}>{member.name}</Text>
-                    <Text style={[styles.memberStatus, { color: colors.textSecondary }]}> 
-                      Last active: {member.lastActive}
-                    </Text>
-                  </View>
-                  {member.name === 'John Doe' && (
-                    <TouchableOpacity 
-                      style={[styles.updateButton, { backgroundColor: colors.blue, marginLeft: 8 }]}
-                      onPress={() => Alert.alert('Update Progress', 'Update your progress here')}
-                    >
-                      <Text style={styles.updateButtonText}>Update</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                <View style={styles.analyticsStats}>
-                  <View style={styles.statItem}>
-                    <Text style={[styles.statValue, { color: colors.coral }]}>{member.issuesCompleted}</Text>
-                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Completed</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={[styles.statValue, { color: colors.blue }]}>{member.issuesInProgress}</Text>
-                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>In Progress</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={[styles.statValue, { color: member.productivity > 80 ? '#4ECDC4' : '#FF6B6B' }]}> 
-                      {member.productivity}%
-                    </Text>
-                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Productivity</Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Team Activity */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
-          <View style={[styles.activityCard, { backgroundColor: colors.white }]}> 
+      {/* Team Activity */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
+        <View style={[styles.activityCard, { backgroundColor: colors.white }]}>
             {[{avatar: 'JD', name: 'John Doe', text: 'Completed issue "Fix login bug"', time: '2h ago', color: colors.coral},
               {avatar: 'AS', name: 'Alice Smith', text: 'Started work on "Dashboard redesign"', time: '4h ago', color: colors.blue},
               {avatar: 'MJ', name: 'Mike Johnson', text: 'Created new issue "Mobile app testing"', time: '6h ago', color: '#4ECDC4'}].map((activity, idx) => (
               <View key={idx} style={[styles.activityItem, { marginBottom: idx === 2 ? 0 : 14 }]}> 
                 <View style={[styles.avatar, { backgroundColor: activity.color }]}> 
                   <Text style={styles.avatarText}>{activity.avatar}</Text>
-                </View>
-                <View style={styles.activityContent}>
+            </View>
+            <View style={styles.activityContent}>
                   <Text style={[styles.activityName, { color: colors.text }]}>{activity.name}</Text>
                   <Text style={[styles.activityText, { color: colors.text }]}>{activity.text}</Text>
-                </View>
+            </View>
                 <Text style={[styles.activityTime, { color: colors.text }]}>{activity.time}</Text>
-              </View>
-            ))}
           </View>
+            ))}
         </View>
+              </View>
       </ScrollView>
 
       <ReportsModal
@@ -239,14 +239,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    paddingHorizontal: 20,
+    paddingTop: 36,
+    paddingBottom: 8,
+    backgroundColor: 'transparent',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  headerButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 36,
-    paddingBottom: 12,
-    backgroundColor: 'transparent',
-    flexWrap: 'wrap', // allow wrapping if needed
+    gap: 8,
   },
   headerButtons: {
     flexDirection: 'row',
@@ -272,12 +279,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flexShrink: 1,
     flexWrap: 'wrap',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    flexShrink: 1,
-    marginRight: 8,
   },
   filterButton: {
     flexDirection: 'row',

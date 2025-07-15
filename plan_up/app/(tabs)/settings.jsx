@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useUser, useAuth } from '@clerk/clerk-expo';
+import { useUser, useAuth, useOrganizationList } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors.jsx';
 import { useColorScheme } from 'react-native';
@@ -20,6 +20,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const { organizationList, setActive } = useOrganizationList();
 
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
@@ -186,6 +187,35 @@ export default function SettingsScreen() {
           title: 'Export Data',
           subtitle: 'Download your data',
           onPress: () => Alert.alert('Export Data', 'Data export coming soon'),
+        })}
+      </View>
+
+      {/* Manage Organization (Jira/ClickUp style) */}
+      <View style={[styles.section, { backgroundColor: colors.white }]}>
+        {renderSectionHeader('Manage Organization')}
+        {renderSettingItem({
+          icon: 'add-circle',
+          title: 'Create Organization',
+          subtitle: 'Start a new organization/workspace',
+          onPress: () => setActive({ createOrganization: true }),
+        })}
+        {renderSettingItem({
+          icon: 'log-in',
+          title: 'Join Organization',
+          subtitle: 'Join with an invite link or code',
+          onPress: () => setActive({ joinOrganization: true }),
+        })}
+        {Array.isArray(organizationList) && organizationList.length > 0 && renderSettingItem({
+          icon: 'swap-horizontal',
+          title: 'Switch Organization',
+          subtitle: 'Change your active organization',
+          onPress: () => Alert.alert('Switch Organization', 'Go to Organization Management to switch.'),
+        })}
+        {Array.isArray(organizationList) && organizationList.length > 0 && renderSettingItem({
+          icon: 'settings-outline',
+          title: 'Organization Management',
+          subtitle: 'Manage members, roles, and settings',
+          onPress: () => router.push('/Organization'),
         })}
       </View>
 

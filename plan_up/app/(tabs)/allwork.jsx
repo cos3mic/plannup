@@ -4,6 +4,7 @@ import { FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, useColorSchem
 import IssueDetailsModal from '../../components/IssueDetailsModal';
 import { useIssues } from '../../hooks/useIssues';
 import { Colors } from '../../constants/Colors.jsx';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Remove the static issueData as we'll use the hook
 
@@ -78,12 +79,9 @@ export default function AllWorkScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["bottom"]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>All Work</Text>
-        <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.coral }]}>
-          <Ionicons name="add" size={24} color={colors.white} />
-        </TouchableOpacity>
       </View>
 
       {/* Filter Tabs */}
@@ -143,9 +141,18 @@ export default function AllWorkScreen() {
         data={issues}
         renderItem={renderIssueCard}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[styles.listContainer, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
       />
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: colors.coral }]}
+        activeOpacity={0.8}
+        onPress={() => { /* TODO: Add new issue/task modal or action */ }}
+      >
+        <Ionicons name="add" size={28} color={colors.white} />
+      </TouchableOpacity>
 
       <IssueDetailsModal
         visible={isIssueDetailsModalVisible}
@@ -159,7 +166,7 @@ export default function AllWorkScreen() {
         onAddTimeLog={addTimeLog}
         onAddAttachment={addAttachment}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -332,5 +339,21 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 10,
     fontWeight: 'bold',
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
+    zIndex: 10,
   },
 }); 

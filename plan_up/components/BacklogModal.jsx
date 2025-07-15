@@ -1,3 +1,4 @@
+
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useEffect } from 'react';
 import {
@@ -219,20 +220,20 @@ export default function BacklogModal({
         <View style={styles.searchContainer}>
           <View style={styles.searchBarWrapper}>
             <Ionicons name="search" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
-            <TextInput
-              style={[
-                styles.searchInput,
-                {
-                  backgroundColor: colors.white,
-                  borderColor: colors.border,
-                  color: colors.text,
-                },
-              ]}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search issues..."
-              placeholderTextColor={colors.textSecondary}
-            />
+          <TextInput
+            style={[
+              styles.searchInput,
+              {
+                backgroundColor: colors.white,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search issues..."
+            placeholderTextColor={colors.textSecondary}
+          />
           </View>
         </View>
 
@@ -278,41 +279,41 @@ export default function BacklogModal({
           ))}
         </ScrollView>
 
-        {/* Sprint Selection */}
-        <View style={styles.sprintSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Add to Sprint</Text>
-          <FlatList
-            data={sprints.filter(s => s.status === 'planned' || s.status === 'active')}
-            renderItem={renderSprintItem}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.sprintList}
-          />
-        </View>
+          {/* Sprint Selection */}
+          <View style={styles.sprintSection}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Add to Sprint</Text>
+            <FlatList
+              data={sprints.filter(s => s.status === 'planned' || s.status === 'active')}
+              renderItem={renderSprintItem}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.sprintList}
+            />
+          </View>
 
         {/* Issues List (scrollable) */}
-        <View style={styles.issuesSection}>
-          <View style={styles.issuesHeader}>
+          <View style={styles.issuesSection}>
+            <View style={styles.issuesHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Issues ({filteredIssues.length})</Text>
-            {selectedIssues.length > 0 && (
-              <TouchableOpacity
+              {selectedIssues.length > 0 && (
+                <TouchableOpacity
                 style={[styles.addToSprintButton, { backgroundColor: colors.coral, flexDirection: 'row', alignItems: 'center', gap: 4 }]}
-                onPress={handleAddToSprint}
-              >
+                  onPress={handleAddToSprint}
+                >
                 <Ionicons name="arrow-forward-circle" size={18} color="#fff" />
-                <Text style={styles.addToSprintText}>Add to Sprint</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          <FlatList
-            data={filteredIssues}
-            renderItem={renderIssueItem}
-            keyExtractor={(item) => item.id}
+                  <Text style={styles.addToSprintText}>Add to Sprint</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <FlatList
+              data={filteredIssues}
+              renderItem={renderIssueItem}
+              keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={true}
-            contentContainerStyle={styles.issuesList}
+              contentContainerStyle={styles.issuesList}
             style={{ flexGrow: 1 }}
-          />
+            />
         </View>
       </View>
     </Modal>

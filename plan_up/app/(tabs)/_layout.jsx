@@ -5,6 +5,7 @@ import { useColorScheme } from 'react-native';
 import { Animated, View } from 'react-native';
 import { useRef, useEffect } from 'react';
 import UserAvatar from '../../components/UserAvatar';
+import IdeasScreen from './ideas.jsx'; // (to be created)
 
 function TabBarIcon({ name, color, focused, size = 24 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -84,6 +85,15 @@ export default function TabLayout() {
           title: 'All Work',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="list" color={color} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="ideas"
+        options={{
+          title: 'Ideas',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="bulb" color={color} focused={focused} />
           ),
         }}
       />
