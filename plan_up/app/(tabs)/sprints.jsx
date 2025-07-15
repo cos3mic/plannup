@@ -297,10 +297,16 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 70,
   },
   filterText: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
   },
   statsContainer: {
     flexDirection: 'row',

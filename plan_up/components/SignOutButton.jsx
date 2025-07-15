@@ -1,15 +1,16 @@
 import { useClerk } from '@clerk/clerk-expo';
-import * as Linking from 'expo-linking';
+import { useRouter } from 'expo-router';
 import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 export const SignOutButton = () => {
   const { signOut } = useClerk();
+  const router = useRouter();
   
   const handleSignOut = async () => {
     try {
       await signOut();
-      // Redirect to sign-in page
-      Linking.openURL(Linking.createURL('/sign-in'));
+      // Navigate to sign-in page using Expo Router
+      router.replace('/(auth)/sign-in');
     } catch (err) {
       console.error('Sign out error:', err);
     }

@@ -203,12 +203,14 @@ const styles = StyleSheet.create({
     minWidth: 80,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   filterText: {
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
     flexShrink: 0,
+    color: '#333',
   },
   statsContainer: {
     flexDirection: 'row',

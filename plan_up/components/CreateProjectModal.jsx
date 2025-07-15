@@ -59,7 +59,7 @@ const projectLeads = [
   { id: '4', name: 'Sarah Wilson', email: 'sarah@company.com', avatar: 'SW' },
 ];
 
-export default function CreateProjectModal({ visible, onClose }) {
+export default function CreateProjectModal({ visible, onClose, onProjectCreated }) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   
@@ -108,6 +108,24 @@ export default function CreateProjectModal({ visible, onClose }) {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Create new project object
+      const newProject = {
+        id: Date.now().toString(), // Generate unique ID
+        name: projectName.trim(),
+        key: projectKey.trim(),
+        progress: 0,
+        issues: 0,
+        color: selectedTemplate?.color || '#FF6B6B',
+        description: description.trim(),
+        lead: selectedLead,
+        template: selectedTemplate,
+      };
+      
+      // Call the callback to update the project list
+      if (onProjectCreated) {
+        onProjectCreated(newProject);
+      }
       
       Alert.alert(
         'Success',

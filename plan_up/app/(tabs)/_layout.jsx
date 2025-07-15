@@ -87,33 +87,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="sprints"
-        options={{
-          title: 'Sprints',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="play-circle" color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="notification"
-        options={{
-          title: 'Notifications',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="notifications" color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="settings" color={color} focused={focused} />
-          ),
-        }}
-      />
     </Tabs>
   );
 }

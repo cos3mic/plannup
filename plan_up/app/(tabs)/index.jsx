@@ -5,8 +5,10 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import CreateIssueModal from '../../components/CreateIssueModal';
 import SearchModal from '../../components/SearchModal';
+import SprintModal from '../../components/SprintModal';
+import ReportsModal from '../../components/ReportsModal';
 import { SignOutButton } from '../../components/SignOutButton';
-import SwipeableActivityItem from '../../components/SwipeableActivityItem';
+import ActivityItem from '../../components/ActivityItem';
 import UpdateActivityModal from '../../components/UpdateActivityModal';
 import { useRecentActivities } from '../../hooks/useRecentActivities';
 import { Colors } from '../../constants/Colors.jsx';
@@ -17,6 +19,8 @@ export default function HomeScreen() {
   const { user } = useUser();
   const [isCreateIssueModalVisible, setIsCreateIssueModalVisible] = useState(false);
   const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
+  const [isSprintModalVisible, setIsSprintModalVisible] = useState(false);
+  const [isReportsModalVisible, setIsReportsModalVisible] = useState(false);
   const [isUpdateActivityModalVisible, setIsUpdateActivityModalVisible] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   
@@ -79,12 +83,18 @@ export default function HomeScreen() {
                 <Text style={[styles.actionText, { color: colors.text }]}>Search</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.actionCard, { backgroundColor: colors.white, borderColor: colors.blue }]}>
+              <TouchableOpacity 
+                style={[styles.actionCard, { backgroundColor: colors.white, borderColor: colors.blue }]}
+                onPress={() => setIsSprintModalVisible(true)}
+              >
                 <Ionicons name="calendar" size={32} color={colors.coral} />
                 <Text style={[styles.actionText, { color: colors.text }]}>Sprint</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.actionCard, { backgroundColor: colors.white, borderColor: colors.blue }]}>
+              <TouchableOpacity 
+                style={[styles.actionCard, { backgroundColor: colors.white, borderColor: colors.blue }]}
+                onPress={() => setIsReportsModalVisible(true)}
+              >
                 <Ionicons name="analytics" size={32} color={colors.coral} />
                 <Text style={[styles.actionText, { color: colors.text }]}>Reports</Text>
               </TouchableOpacity>
@@ -99,7 +109,7 @@ export default function HomeScreen() {
             <View style={styles.activitiesContainer}>
               {activities.length > 0 ? (
                 activities.map((activity) => (
-                  <SwipeableActivityItem
+                  <ActivityItem
                     key={activity.id}
                     activity={activity}
                     onDelete={handleActivityDelete}
@@ -132,6 +142,16 @@ export default function HomeScreen() {
         <SearchModal 
           visible={isSearchModalVisible}
           onClose={() => setIsSearchModalVisible(false)}
+        />
+
+        <SprintModal
+          visible={isSprintModalVisible}
+          onClose={() => setIsSprintModalVisible(false)}
+        />
+
+        <ReportsModal
+          visible={isReportsModalVisible}
+          onClose={() => setIsReportsModalVisible(false)}
         />
 
         <UpdateActivityModal

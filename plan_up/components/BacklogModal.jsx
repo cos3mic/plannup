@@ -206,30 +206,34 @@ export default function BacklogModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View style={[styles.container, { backgroundColor: colors.background + 'F2' }]}> {/* Subtle modal background */}
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.white, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 }]}> 
           <Text style={[styles.headerTitle, { color: colors.text }]}>Backlog</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color={colors.text} />
+            <Ionicons name="close" size={28} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         {/* Search */}
         <View style={styles.searchContainer}>
-          <TextInput
-            style={[
-              styles.searchInput,
-              {
-                backgroundColor: colors.white,
-                borderColor: colors.border,
-                color: colors.text,
-              },
-            ]}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search issues..."
-            placeholderTextColor={colors.textSecondary}
-          />
+          <View style={styles.searchBarWrapper}>
+            <Ionicons name="search" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
+            <TextInput
+              style={[
+                styles.searchInput,
+                {
+                  backgroundColor: colors.white,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search issues..."
+              placeholderTextColor={colors.textSecondary}
+            />
+          </View>
         </View>
 
         {/* Filters */}
@@ -245,12 +249,23 @@ export default function BacklogModal({
               style={[
                 styles.filterTab,
                 { 
-                  backgroundColor: selectedFilter === filter ? colors.coral : 'transparent',
-                  borderColor: selectedFilter === filter ? colors.coral : colors.border
+                  backgroundColor: selectedFilter === filter ? colors.coral : colors.background,
+                  borderColor: selectedFilter === filter ? colors.coral : colors.border,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  shadowColor: selectedFilter === filter ? colors.coral : 'transparent',
+                  shadowOpacity: selectedFilter === filter ? 0.12 : 0,
+                  shadowRadius: selectedFilter === filter ? 4 : 0,
+                  elevation: selectedFilter === filter ? 2 : 0,
                 }
               ]}
               onPress={() => setSelectedFilter(filter)}
             >
+              {/* Add icons for each filter */}
+              {filter === 'Bugs' && <Ionicons name="bug" size={14} color={selectedFilter === filter ? colors.white : colors.textSecondary} style={{ marginRight: 4 }} />}
+              {filter === 'Stories' && <Ionicons name="book" size={14} color={selectedFilter === filter ? colors.white : colors.textSecondary} style={{ marginRight: 4 }} />}
+              {filter === 'Tasks' && <Ionicons name="checkmark-done" size={14} color={selectedFilter === filter ? colors.white : colors.textSecondary} style={{ marginRight: 4 }} />}
+              {filter === 'Unassigned' && <Ionicons name="person" size={14} color={selectedFilter === filter ? colors.white : colors.textSecondary} style={{ marginRight: 4 }} />}
               <Text 
                 style={[
                   styles.filterText,
@@ -263,44 +278,41 @@ export default function BacklogModal({
           ))}
         </ScrollView>
 
-        <View style={styles.content}>
-          {/* Sprint Selection */}
-          <View style={styles.sprintSection}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Add to Sprint</Text>
-            <FlatList
-              data={sprints.filter(s => s.status === 'planned' || s.status === 'active')}
-              renderItem={renderSprintItem}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.sprintList}
-            />
-          </View>
+        {/* Sprint Selection */}
+        <View style={styles.sprintSection}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Add to Sprint</Text>
+          <FlatList
+            data={sprints.filter(s => s.status === 'planned' || s.status === 'active')}
+            renderItem={renderSprintItem}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.sprintList}
+          />
+        </View>
 
-          {/* Issues List */}
-          <View style={styles.issuesSection}>
-            <View style={styles.issuesHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Issues ({filteredIssues.length})
-              </Text>
-              {selectedIssues.length > 0 && (
-                <TouchableOpacity
-                  style={[styles.addToSprintButton, { backgroundColor: colors.coral }]}
-                  onPress={handleAddToSprint}
-                >
-                  <Text style={styles.addToSprintText}>Add to Sprint</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            
-            <FlatList
-              data={filteredIssues}
-              renderItem={renderIssueItem}
-              keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.issuesList}
-            />
+        {/* Issues List (scrollable) */}
+        <View style={styles.issuesSection}>
+          <View style={styles.issuesHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Issues ({filteredIssues.length})</Text>
+            {selectedIssues.length > 0 && (
+              <TouchableOpacity
+                style={[styles.addToSprintButton, { backgroundColor: colors.coral, flexDirection: 'row', alignItems: 'center', gap: 4 }]}
+                onPress={handleAddToSprint}
+              >
+                <Ionicons name="arrow-forward-circle" size={18} color="#fff" />
+                <Text style={styles.addToSprintText}>Add to Sprint</Text>
+              </TouchableOpacity>
+            )}
           </View>
+          <FlatList
+            data={filteredIssues}
+            renderItem={renderIssueItem}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={styles.issuesList}
+            style={{ flexGrow: 1 }}
+          />
         </View>
       </View>
     </Modal>
@@ -310,41 +322,79 @@ export default function BacklogModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
     borderBottomWidth: 1,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    zIndex: 2,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
+    textAlignVertical: 'center',
+    letterSpacing: 0.2,
   },
   closeButton: {
-    padding: 4,
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.04)',
   },
   searchContainer: {
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  searchBarWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   searchInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+    flex: 1,
     fontSize: 16,
+    paddingVertical: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
   },
   filterContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
   filterContent: {
     gap: 8,
+    alignItems: 'center',
+    paddingVertical: 4,
   },
   filterTab: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
+    marginRight: 8,
+    minWidth: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   filterText: {
     fontSize: 14,
@@ -354,62 +404,90 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sprintSection: {
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    borderBottomColor: 'rgba(0,0,0,0.07)',
+    backgroundColor: '#FAFAFA',
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 12,
+    letterSpacing: 0.1,
   },
   sprintList: {
-    gap: 8,
+    gap: 12,
+    alignItems: 'center',
   },
   sprintItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 10,
     borderWidth: 1,
     minWidth: 120,
     alignItems: 'center',
+    marginRight: 10,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   sprintName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 2,
   },
   sprintStatus: {
     fontSize: 12,
+    fontWeight: '500',
+    opacity: 0.7,
   },
   issuesSection: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingTop: 18,
+    paddingBottom: 0,
   },
   issuesHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   addToSprintButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    flexDirection: 'row',
+    gap: 4,
   },
   addToSprintText: {
     color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
   },
   issuesList: {
-    gap: 8,
+    gap: 16,
+    paddingBottom: 32,
   },
   issueItem: {
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 12,
+    padding: 18,
     borderWidth: 1,
+    borderColor: '#eee',
+    backgroundColor: '#fff',
     position: 'relative',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   issueHeader: {
     flexDirection: 'row',
@@ -422,74 +500,85 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   issueKey: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     marginRight: 8,
+    color: '#888',
   },
   typeBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginRight: 4,
   },
   typeText: {
     color: '#fff',
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginLeft: 4,
   },
   priorityText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   issueTitle: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     marginBottom: 8,
     lineHeight: 20,
+    color: '#222',
   },
   issueFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 6,
   },
   assigneeInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+    backgroundColor: '#E0E0E0',
   },
   avatarText: {
     color: '#fff',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   assigneeName: {
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#444',
   },
   issueMeta: {
     alignItems: 'flex-end',
   },
   storyPoints: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     marginBottom: 2,
+    color: '#FFB300',
   },
   issueDate: {
-    fontSize: 10,
+    fontSize: 11,
+    color: '#888',
   },
   selectionOverlay: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 10,
+    right: 10,
   },
 }); 

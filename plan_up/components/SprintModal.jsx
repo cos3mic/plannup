@@ -1,61 +1,31 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
 
-export default function SprintModal({ 
-  visible, 
-  sprint, 
-  onClose, 
-  onSave,
-  onDelete,
-  issues = [],
-  teamMembers = [],
-}) {
+export default function SprintModal({ visible, onClose }) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   
-  const [name, setName] = useState('');
-  const [goal, setGoal] = useState('');
+  const [sprintName, setSprintName] = useState('');
+  const [sprintGoal, setSprintGoal] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [status, setStatus] = useState('planned');
-  const [selectedIssues, setSelectedIssues] = useState([]);
-  const [selectedTeamMembers, setSelectedTeamMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const statusOptions = [
-    { key: 'planned', label: 'Planned', color: '#E5E5E5' },
-    { key: 'active', label: 'Active', color: '#FF6B6B' },
-    { key: 'completed', label: 'Completed', color: '#4ECDC4' },
-  ];
-
-  useEffect(() => {
-    if (sprint) {
-      setName(sprint.name || '');
-      setGoal(sprint.goal || '');
-      setStartDate(sprint.startDate ? new Date(sprint.startDate).toISOString().split('T')[0] : '');
-      setEndDate(sprint.endDate ? new Date(sprint.endDate).toISOString().split('T')[0] : '');
-      setStatus(sprint.status || 'planned');
-      setSelectedIssues(sprint.issues || []);
-      setSelectedTeamMembers(sprint.teamMembers || []);
-    }
-  }, [sprint]);
-
-  const handleSave = async () => {
-    if (!name.trim()) {
+  const handleCreateSprint = async () => {
+    if (!sprintName.trim()) {
       Alert.alert('Error', 'Please enter a sprint name');
       return;
     }
@@ -66,137 +36,100 @@ export default function SprintModal({
     }
 
     setIsLoading(true);
+    
     try {
-      const sprintData = {
-        name: name.trim(),
-        goal: goal.trim(),
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        status,
-        issues: selectedIssues,
-        teamMembers: selectedTeamMembers,
-      };
-
-      if (sprint?.id) {
-        await onSave(sprint.id, sprintData);
-      } else {
-        await onSave(sprintData);
-      }
+      // Here you would integrate with Jira/ClickUp APIs
+      // For now, we'll simulate the API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      onClose();
+      Alert.alert(
+        'Success',
+        'Sprint created successfully!',
+        [{ text: 'OK', onPress: handleClose }]
+      );
     } catch (error) {
-      Alert.alert('Error', 'Failed to save sprint');
+      Alert.alert('Error', 'Failed to create sprint. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDelete = () => {
-    Alert.alert(
-      'Delete Sprint',
-      'Are you sure you want to delete this sprint? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: async () => {
-            setIsLoading(true);
-            try {
-              await onDelete(sprint.id);
-              onClose();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete sprint');
-            } finally {
-              setIsLoading(false);
-            }
-          }
-        },
-      ]
-    );
+  const handleClose = () => {
+    setSprintName('');
+    setSprintGoal('');
+    setStartDate('');
+    setEndDate('');
+    onClose();
   };
 
-  const toggleIssueSelection = (issueId) => {
-    setSelectedIssues(prev => 
-      prev.includes(issueId)
-        ? prev.filter(id => id !== issueId)
-        : [...prev, issueId]
-    );
-  };
-
-  const toggleTeamMemberSelection = (member) => {
-    setSelectedTeamMembers(prev => 
-      prev.includes(member)
-        ? prev.filter(m => m !== member)
-        : [...prev, member]
-    );
-  };
-
-  const getSprintProgress = () => {
-    if (!sprint) return 0;
-    const totalIssues = sprint.issues?.length || 0;
-    if (totalIssues === 0) return 0;
-    
-    const completedIssues = issues.filter(issue => 
-      sprint.issues.includes(issue.id) && issue.status === 'Done'
-    ).length;
-    
-    return Math.round((completedIssues / totalIssues) * 100);
-  };
-
-  const getSprintVelocity = () => {
-    if (!sprint) return 0;
-    const sprintIssues = issues.filter(issue => sprint.issues.includes(issue.id));
-    return sprintIssues.reduce((total, issue) => total + (issue.storyPoints || 0), 0);
-  };
-
-  const renderSprintInfo = () => (
-    <ScrollView style={styles.content}>
-      {/* Basic Info */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Sprint Information</Text>
-        
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, { color: colors.text }]}>Sprint Name *</Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.white,
-                borderColor: colors.border,
-                color: colors.text,
-              },
-            ]}
-            value={name}
-            onChangeText={setName}
-            placeholder="Enter sprint name"
-            placeholderTextColor={colors.textSecondary}
-          />
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={handleClose}
+    >
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Create New Sprint
+          </Text>
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, { color: colors.text }]}>Sprint Goal</Text>
-          <TextInput
-            style={[
-              styles.textArea,
-              {
-                backgroundColor: colors.white,
-                borderColor: colors.border,
-                color: colors.text,
-              },
-            ]}
-            value={goal}
-            onChangeText={setGoal}
-            placeholder="Enter sprint goal"
-            placeholderTextColor={colors.textSecondary}
-            multiline
-            numberOfLines={3}
-          />
-        </View>
+        <ScrollView style={styles.content}>
+          {/* Sprint Name */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Sprint Name *
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.white,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={sprintName}
+              onChangeText={setSprintName}
+              placeholder="Enter sprint name"
+              placeholderTextColor={colors.textSecondary}
+            />
+          </View>
 
-        <View style={styles.dateRow}>
-          <View style={styles.dateInput}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Start Date *</Text>
+          {/* Sprint Goal */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Sprint Goal
+            </Text>
+            <TextInput
+              style={[
+                styles.textArea,
+                {
+                  backgroundColor: colors.white,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={sprintGoal}
+              onChangeText={setSprintGoal}
+              placeholder="What do you want to accomplish in this sprint?"
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* Start Date */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Start Date *
+            </Text>
             <TextInput
               style={[
                 styles.input,
@@ -212,9 +145,12 @@ export default function SprintModal({
               placeholderTextColor={colors.textSecondary}
             />
           </View>
-          
-          <View style={styles.dateInput}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>End Date *</Text>
+
+          {/* End Date */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              End Date *
+            </Text>
             <TextInput
               style={[
                 styles.input,
@@ -230,187 +166,40 @@ export default function SprintModal({
               placeholderTextColor={colors.textSecondary}
             />
           </View>
-        </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, { color: colors.text }]}>Status</Text>
-          <View style={styles.statusContainer}>
-            {statusOptions.map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={[
-                  styles.statusButton,
-                  {
-                    backgroundColor: status === option.key ? option.color : colors.white,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => setStatus(option.key)}
-              >
-                <Text
-                  style={[
-                    styles.statusButtonText,
-                    { color: status === option.key ? '#000' : colors.text },
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          {/* Sprint Info */}
+          <View style={[styles.infoCard, { backgroundColor: colors.white }]}>
+            <Ionicons name="information-circle" size={20} color={colors.blue} />
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+              Sprints typically last 1-4 weeks and help teams focus on specific goals.
+            </Text>
           </View>
-        </View>
-      </View>
-
-      {/* Sprint Stats */}
-      {sprint && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Sprint Statistics</Text>
-          
-          <View style={styles.statsGrid}>
-            <View style={[styles.statCard, { backgroundColor: colors.white }]}>
-              <Text style={[styles.statValue, { color: colors.coral }]}>
-                {sprint.issues?.length || 0}
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.text }]}>Issues</Text>
-            </View>
-            
-            <View style={[styles.statCard, { backgroundColor: colors.white }]}>
-              <Text style={[styles.statValue, { color: colors.blue }]}>
-                {getSprintVelocity()}
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.text }]}>Story Points</Text>
-            </View>
-            
-            <View style={[styles.statCard, { backgroundColor: colors.white }]}>
-              <Text style={[styles.statValue, { color: '#4ECDC4' }]}>
-                {getSprintProgress()}%
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.text }]}>Progress</Text>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Team Members */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Team Members</Text>
-        <View style={styles.membersContainer}>
-          {teamMembers.map((member) => (
-            <TouchableOpacity
-              key={member}
-              style={[
-                styles.memberItem,
-                {
-                  backgroundColor: selectedTeamMembers.includes(member) ? colors.coral : colors.white,
-                  borderColor: colors.border,
-                },
-              ]}
-              onPress={() => toggleTeamMemberSelection(member)}
-            >
-              <Text
-                style={[
-                  styles.memberText,
-                  { color: selectedTeamMembers.includes(member) ? '#fff' : colors.text },
-                ]}
-              >
-                {member}
-              </Text>
-              {selectedTeamMembers.includes(member) && (
-                <Ionicons name="checkmark" size={16} color="#fff" />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {/* Issues Selection */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Sprint Issues</Text>
-        <FlatList
-          data={issues}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.issueItem,
-                {
-                  backgroundColor: selectedIssues.includes(item.id) ? colors.coral + '20' : colors.white,
-                  borderColor: colors.border,
-                },
-              ]}
-              onPress={() => toggleIssueSelection(item.id)}
-            >
-              <View style={styles.issueInfo}>
-                <Text style={[styles.issueKey, { color: colors.text }]}>{item.key}</Text>
-                <Text style={[styles.issueTitle, { color: colors.text }]}>{item.title}</Text>
-                <View style={styles.issueMeta}>
-                  <Text style={[styles.issueType, { color: colors.textSecondary }]}>{item.type}</Text>
-                  <Text style={[styles.issuePoints, { color: colors.coral }]}>
-                    {item.storyPoints || 0} pts
-                  </Text>
-                </View>
-              </View>
-              {selectedIssues.includes(item.id) && (
-                <Ionicons name="checkmark-circle" size={20} color={colors.coral} />
-              )}
-            </TouchableOpacity>
-          )}
-          scrollEnabled={false}
-        />
-      </View>
-    </ScrollView>
-  );
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {sprint ? 'Edit Sprint' : 'Create Sprint'}
-          </Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-
-        {renderSprintInfo()}
+        </ScrollView>
 
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
-          {sprint && (
-            <TouchableOpacity
-              style={[styles.deleteButton, { borderColor: '#FF6B6B' }]}
-              onPress={handleDelete}
-            >
-              <Text style={[styles.deleteButtonText, { color: '#FF6B6B' }]}>Delete</Text>
-            </TouchableOpacity>
-          )}
-          
           <TouchableOpacity
             style={[styles.cancelButton, { borderColor: colors.border }]}
-            onPress={onClose}
+            onPress={handleClose}
           >
-            <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
+            <Text style={[styles.cancelButtonText, { color: colors.text }]}>
+              Cancel
+            </Text>
           </TouchableOpacity>
           
           <TouchableOpacity
             style={[
-              styles.saveButton,
+              styles.createButton,
               {
                 backgroundColor: isLoading ? colors.textSecondary : colors.coral,
               },
             ]}
-            onPress={handleSave}
+            onPress={handleCreateSprint}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.saveButtonText}>Save Sprint</Text>
+              <Text style={styles.createButtonText}>Create Sprint</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -439,23 +228,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    padding: 20,
   },
   section: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
     marginBottom: 8,
   },
   input: {
@@ -469,133 +249,46 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    minHeight: 80,
+    minHeight: 100,
   },
-  dateRow: {
+  infoCard: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  dateInput: {
-    flex: 1,
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  statusButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  statusButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
     padding: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    marginTop: 16,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  membersContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  memberItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 8,
-  },
-  memberText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  issueItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 8,
-  },
-  issueInfo: {
+  infoText: {
     flex: 1,
-  },
-  issueKey: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  issueTitle: {
+    marginLeft: 12,
     fontSize: 14,
-    marginBottom: 4,
-  },
-  issueMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  issueType: {
-    fontSize: 12,
-  },
-  issuePoints: {
-    fontSize: 12,
-    fontWeight: '600',
+    lineHeight: 20,
   },
   footer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     padding: 20,
-    gap: 12,
     borderTopWidth: 1,
-  },
-  deleteButton: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  deleteButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   cancelButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 8,
     borderWidth: 1,
+    borderRadius: 8,
+    padding: 16,
+    marginRight: 12,
     alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
   },
-  saveButton: {
+  createButton: {
     flex: 1,
-    padding: 16,
     borderRadius: 8,
+    padding: 16,
+    marginLeft: 12,
     alignItems: 'center',
   },
-  saveButtonText: {
+  createButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',

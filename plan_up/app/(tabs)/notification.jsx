@@ -239,10 +239,16 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderWidth: 1,
     borderColor: '#E5E5E5',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 70,
   },
   filterText: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
   },
   statsContainer: {
     flexDirection: 'row',

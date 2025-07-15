@@ -7,7 +7,7 @@ import { useSprints } from '../../hooks/useSprints';
 import { useIssues } from '../../hooks/useIssues';
 import { Colors } from '../../constants/Colors.jsx';
 
-const projectData = [
+const initialProjectData = [
   {
     id: '1',
     name: 'Mobile App Development',
@@ -47,9 +47,14 @@ export default function ProjectScreen() {
   const colors = Colors[colorScheme ?? 'light'];
   const [isCreateProjectModalVisible, setIsCreateProjectModalVisible] = useState(false);
   const [isBacklogModalVisible, setIsBacklogModalVisible] = useState(false);
+  const [projects, setProjects] = useState(initialProjectData);
   
   const { sprints, addIssueToSprint } = useSprints();
   const { issues, updateIssue } = useIssues();
+
+  const handleProjectCreated = (newProject) => {
+    setProjects(prevProjects => [...prevProjects, newProject]);
+  };
 
   const renderProjectCard = ({ item }) => (
     <TouchableOpacity style={[styles.projectCard, { backgroundColor: colors.white }]}>
@@ -112,7 +117,7 @@ export default function ProjectScreen() {
       </View>
 
       <FlatList
-        data={projectData}
+        data={projects}
         renderItem={renderProjectCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
@@ -122,6 +127,7 @@ export default function ProjectScreen() {
       <CreateProjectModal 
         visible={isCreateProjectModalVisible}
         onClose={() => setIsCreateProjectModalVisible(false)}
+        onProjectCreated={handleProjectCreated}
       />
 
       <BacklogModal
