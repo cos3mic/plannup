@@ -24,6 +24,11 @@ export default function SprintsScreen() {
     'Mike Johnson',
     'Sarah Wilson',
     'David Brown',
+    'Jane Smith',
+    'Robert Chen',
+    'Emily Davis',
+    'Michael Wong',
+    'Lisa Garcia',
   ];
 
   const getSprintIssues = (sprintId) => {

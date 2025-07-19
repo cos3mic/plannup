@@ -12,7 +12,7 @@ export const useSprints = () => {
       issues: ['1', '2', '4'], // issue IDs
       velocity: 85,
       capacity: 100,
-      teamMembers: ['John Doe', 'Alice Smith', 'Mike Johnson'],
+      teamMembers: ['John Doe', 'Alice Smith', 'Mike Johnson', 'Sarah Wilson', 'David Brown'],
     },
     {
       id: '2',
@@ -24,7 +24,7 @@ export const useSprints = () => {
       issues: ['3', '5'],
       velocity: 92,
       capacity: 100,
-      teamMembers: ['John Doe', 'Alice Smith', 'Sarah Wilson'],
+      teamMembers: ['John Doe', 'Alice Smith', 'Sarah Wilson', 'David Brown', 'Jane Smith'],
     },
     {
       id: '3',
@@ -36,7 +36,7 @@ export const useSprints = () => {
       issues: [],
       velocity: 0,
       capacity: 100,
-      teamMembers: ['John Doe', 'Alice Smith', 'Mike Johnson', 'Sarah Wilson'],
+      teamMembers: ['John Doe', 'Alice Smith', 'Mike Johnson', 'Sarah Wilson', 'David Brown', 'Jane Smith', 'Robert Chen'],
     },
   ]);
 

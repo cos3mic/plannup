@@ -35,7 +35,7 @@ export default function SignUpScreen() {
       const signUpAttempt = await signUp.attemptEmailAddressVerification({ code });
       if (signUpAttempt.status === 'complete') {
         await setActive({ session: signUpAttempt.createdSessionId });
-        router.replace('/(tabs)');
+        router.replace('/');
       } else {
         console.error(JSON.stringify(signUpAttempt, null, 2));
       }

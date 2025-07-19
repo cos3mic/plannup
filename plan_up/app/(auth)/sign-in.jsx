@@ -26,7 +26,7 @@ export default function SignInScreen() {
         await setActive({ session: signInAttempt.createdSessionId });
         // Small delay to ensure session is properly set
         setTimeout(() => {
-          router.replace('/(tabs)');
+          router.replace('/');
         }, 100);
       } else {
         console.error(JSON.stringify(signInAttempt, null, 2));

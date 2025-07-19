@@ -68,6 +68,51 @@ export default function DashboardScreen() {
       issuesInProgress: 4,
       productivity: 65,
       lastActive: '4h ago'
+    },
+    {
+      name: 'David Brown',
+      avatar: 'DB',
+      color: '#9C27B0',
+      issuesCompleted: 10,
+      issuesInProgress: 2,
+      productivity: 88,
+      lastActive: '45m ago'
+    },
+    {
+      name: 'Jane Smith',
+      avatar: 'JS',
+      color: '#607D8B',
+      issuesCompleted: 7,
+      issuesInProgress: 3,
+      productivity: 72,
+      lastActive: '1h ago'
+    },
+    {
+      name: 'Robert Chen',
+      avatar: 'RC',
+      color: '#795548',
+      issuesCompleted: 14,
+      issuesInProgress: 1,
+      productivity: 91,
+      lastActive: '15m ago'
+    },
+    {
+      name: 'Emily Davis',
+      avatar: 'ED',
+      color: '#E91E63',
+      issuesCompleted: 5,
+      issuesInProgress: 5,
+      productivity: 68,
+      lastActive: '2h ago'
+    },
+    {
+      name: 'Michael Wong',
+      avatar: 'MW',
+      color: '#3F51B5',
+      issuesCompleted: 11,
+      issuesInProgress: 2,
+      productivity: 83,
+      lastActive: '30m ago'
     }
   ];
 
@@ -319,7 +364,12 @@ export default function DashboardScreen() {
         <View style={[styles.activityCard, { backgroundColor: colors.white }]}>
             {[{avatar: 'JD', name: 'John Doe', text: 'Completed issue "Fix login bug"', time: '2h ago', color: colors.coral},
               {avatar: 'AS', name: 'Alice Smith', text: 'Started work on "Dashboard redesign"', time: '4h ago', color: colors.blue},
-              {avatar: 'MJ', name: 'Mike Johnson', text: 'Created new issue "Mobile app testing"', time: '6h ago', color: '#4ECDC4'}].map((activity, idx) => (
+              {avatar: 'MJ', name: 'Mike Johnson', text: 'Created new issue "Mobile app testing"', time: '6h ago', color: '#4ECDC4'},
+              {avatar: 'DB', name: 'David Brown', text: 'Updated sprint velocity metrics', time: '8h ago', color: '#9C27B0'},
+              {avatar: 'JS', name: 'Jane Smith', text: 'Resolved bug in payment system', time: '10h ago', color: '#607D8B'},
+              {avatar: 'RC', name: 'Robert Chen', text: 'Deployed new API endpoints', time: '12h ago', color: '#795548'},
+              {avatar: 'ED', name: 'Emily Davis', text: 'Completed user research interviews', time: '1d ago', color: '#E91E63'},
+              {avatar: 'MW', name: 'Michael Wong', text: 'Optimized database queries', time: '1d ago', color: '#3F51B5'}].map((activity, idx) => (
               <View key={idx} style={[styles.activityItem, { marginBottom: idx === 2 ? 0 : 14 }]}> 
                 <View style={[styles.avatar, { backgroundColor: activity.color }]}> 
                   <Text style={styles.avatarText}>{activity.avatar}</Text>
@@ -331,8 +381,8 @@ export default function DashboardScreen() {
                 <Text style={[styles.activityTime, { color: colors.text }]}>{activity.time}</Text>
           </View>
             ))}
-        </View>
-              </View>
+            </View>
+          </View>
 
       {/* Personal Focus & Burnout Prevention */}
       <View style={styles.section}>

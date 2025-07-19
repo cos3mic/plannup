@@ -10,7 +10,7 @@ export const SignOutButton = () => {
     try {
       await signOut();
       // Navigate to sign-in page using Expo Router
-      router.replace('/(auth)/sign-in');
+      router.replace('/sign-in');
     } catch (err) {
       console.error('Sign out error:', err);
     }

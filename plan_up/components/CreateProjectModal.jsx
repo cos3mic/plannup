@@ -57,6 +57,11 @@ const projectLeads = [
   { id: '2', name: 'Jane Smith', email: 'jane@company.com', avatar: 'JS' },
   { id: '3', name: 'Mike Johnson', email: 'mike@company.com', avatar: 'MJ' },
   { id: '4', name: 'Sarah Wilson', email: 'sarah@company.com', avatar: 'SW' },
+  { id: '5', name: 'David Brown', email: 'david@company.com', avatar: 'DB' },
+  { id: '6', name: 'Robert Chen', email: 'robert@company.com', avatar: 'RC' },
+  { id: '7', name: 'Emily Davis', email: 'emily@company.com', avatar: 'ED' },
+  { id: '8', name: 'Michael Wong', email: 'michael@company.com', avatar: 'MW' },
+  { id: '9', name: 'Lisa Garcia', email: 'lisa@company.com', avatar: 'LG' },
 ];
 
 export default function CreateProjectModal({ visible, onClose, onProjectCreated }) {

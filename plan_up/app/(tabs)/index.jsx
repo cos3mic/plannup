@@ -12,6 +12,7 @@ import ActivityItem from '../../components/ActivityItem';
 import UpdateActivityModal from '../../components/UpdateActivityModal';
 import { useRecentActivities } from '../../hooks/useRecentActivities';
 import { Colors } from '../../constants/Colors.jsx';
+import PendingInvitesNotification from '../../components/PendingInvitesNotification';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
@@ -60,6 +61,9 @@ export default function HomeScreen() {
               Your project management companion
             </Text>
           </View>
+
+          {/* Pending Invites Notification */}
+          <PendingInvitesNotification />
 
           <View style={styles.quickActions}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>

@@ -15,6 +15,7 @@ import OrganizationProviderWrapper from './OrganizationProviderWrapper';
 import { IdeaProvider } from '../components/IdeaContext.jsx';
 import { View } from 'react-native';
 import CustomDrawerContent from '../components/CustomDrawerContent';
+import PushNotificationService from '../components/PushNotificationService';
 
 // Import screens
 import HomeScreen from './(tabs)/index.jsx';
@@ -26,6 +27,8 @@ import NotificationScreen from './(tabs)/notification.jsx';
 import SettingsScreen from './(tabs)/settings.jsx';
 import OrganizationManagement from '../components/OrganizationManagement.jsx';
 import IdeasScreen from './(tabs)/ideas.jsx';
+import { useAuth } from '@clerk/clerk-expo';
+import AuthRoutesLayout from './(auth)/_layout.jsx';
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
@@ -81,33 +84,66 @@ function AppProviders({ children }) {
 
 export default function RootLayout() {
   const publishableKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
         <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
           <OrganizationProviderWrapper>
-            <AppProviders>
-              {/* Animated background for Drawer */}
-              <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 320, zIndex: 0 }} pointerEvents="none">
-                {/* Optionally add animated shapes or opacity here for more effect */}
-              </View>
-              <Drawer.Navigator
-                initialRouteName="Main"
-                drawerContent={props => <CustomDrawerContent {...props} />}
-                screenOptions={{
-                  headerShown: true,
-                }}
-              >
-                <Drawer.Screen name="Main" component={MainTabs} options={{ title: 'Main' }} />
-                <Drawer.Screen name="Organization" component={OrganizationManagement} />
-                <Drawer.Screen name="Sprints" component={SprintsScreen} />
-                <Drawer.Screen name="Notifications" component={NotificationScreen} />
-                <Drawer.Screen name="Settings" component={SettingsScreen} />
-              </Drawer.Navigator>
-            </AppProviders>
+            <RootLayoutInner />
           </OrganizationProviderWrapper>
         </ClerkProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>
+  );
+}
+
+function RootLayoutInner() {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  // Initialize push notifications
+  React.useEffect(() => {
+    const initializeNotifications = async () => {
+      try {
+        await PushNotificationService.registerForPushNotificationsAsync();
+        PushNotificationService.setupNotificationListeners();
+      } catch (error) {
+        console.error('Failed to initialize push notifications:', error);
+      }
+    };
+
+    initializeNotifications();
+
+    // Cleanup on unmount
+    return () => {
+      PushNotificationService.cleanup();
+    };
+  }, []);
+
+  if (!isLoaded) return null;
+  if (!isSignedIn) {
+    return <AuthRoutesLayout />;
+  }
+
+  return (
+    <AppProviders>
+      {/* Animated background for Drawer */}
+      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 320, zIndex: 0 }} pointerEvents="none">
+        {/* Optionally add animated shapes or opacity here for more effect */}
+      </View>
+      <Drawer.Navigator
+        initialRouteName="Main"
+        drawerContent={props => <CustomDrawerContent {...props} />}
+        screenOptions={{
+          headerShown: true,
+        }}
+      >
+        <Drawer.Screen name="Main" component={MainTabs} options={{ title: 'Main' }} />
+        <Drawer.Screen name="Organization" component={OrganizationManagement} />
+        <Drawer.Screen name="Sprints" component={SprintsScreen} />
+        <Drawer.Screen name="Notifications" component={NotificationScreen} />
+        <Drawer.Screen name="Settings" component={SettingsScreen} />
+      </Drawer.Navigator>
+    </AppProviders>
   );
 }

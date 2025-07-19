@@ -41,7 +41,7 @@ export default function SettingsScreen() {
           onPress: async () => {
             try {
               await signOut();
-              router.replace('/(onboarding)');
+              router.replace('/onboarding');
             } catch (error) {
               console.error('Error signing out:', error);
             }

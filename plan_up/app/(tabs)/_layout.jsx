@@ -55,7 +55,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="home" color={color} focused={focused} />
           ),
@@ -64,7 +63,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="project"
         options={{
-          title: 'Projects',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="folder" color={color} focused={focused} />
           ),
@@ -73,7 +71,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Dashboard',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="grid" color={color} focused={focused} />
           ),
@@ -82,7 +79,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="allwork"
         options={{
-          title: 'All Work',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="list" color={color} focused={focused} />
           ),
@@ -91,7 +87,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="ideas"
         options={{
-          title: 'Ideas',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="bulb" color={color} focused={focused} />
           ),
