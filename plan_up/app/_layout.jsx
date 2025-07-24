@@ -107,8 +107,17 @@ function RootLayoutInner() {
       try {
         await PushNotificationService.registerForPushNotificationsAsync();
         PushNotificationService.setupNotificationListeners();
+        
+        // Show Expo Go limitations info if running in Expo Go
+        if (PushNotificationService.isRunningInExpoGo()) {
+          console.log('Running in Expo Go - Local notifications only');
+        }
       } catch (error) {
         console.error('Failed to initialize push notifications:', error);
+        // Don't show error alert for Expo Go - it's expected
+        if (!PushNotificationService.isRunningInExpoGo()) {
+          console.log('Push notification initialization failed');
+        }
       }
     };
 

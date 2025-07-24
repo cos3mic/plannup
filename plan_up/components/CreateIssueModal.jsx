@@ -13,6 +13,7 @@ import {
     View,
 } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
+import GoogleCalendarPicker from './GoogleCalendarPicker.jsx';
 
 export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
   const colorScheme = useColorScheme();
@@ -21,15 +22,15 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
+  const [dueDate, setDueDate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const priorities = [
     { key: 'low', label: 'Low', color: '#4CAF50' },
     { key: 'medium', label: 'Medium', color: '#FF9800' },
     { key: 'high', label: 'High', color: '#F44336' },
   ];
-
-
 
   const handleCreateIssue = async () => {
     if (!title.trim()) {
@@ -48,7 +49,7 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
       const activity = {
         type: 'issue_created',
         title: `New issue "${title}" created`,
-        description: `Issue created with ${priority} priority${description ? `: ${description}` : ''}`,
+        description: `Issue created with ${priority} priority${description ? `: ${description}` : ''}${dueDate ? `, due ${formatDate(dueDate)}` : ''}`,
         icon: 'create',
         color: '#FF6B6B',
       };
@@ -73,133 +74,189 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
     setTitle('');
     setDescription('');
     setPriority('medium');
+    setDueDate('');
     onClose();
   };
 
+  const handleDateSelect = (date) => {
+    setDueDate(date.toISOString().split('T')[0]);
+    setShowDatePicker(false);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
-    >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Create New Issue
-          </Text>
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.content}>
-          {/* Issue Title */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Issue Title *
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleClose}
+      >
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              Create New Issue
             </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.white,
-                  borderColor: colors.border,
-                  color: colors.text,
-                },
-              ]}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Enter issue title"
-              placeholderTextColor={colors.textSecondary}
-            />
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
           </View>
 
-          {/* Priority Selection */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Priority
-            </Text>
-            <View style={styles.priorityContainer}>
-              {priorities.map((p) => (
-                <TouchableOpacity
-                  key={p.key}
-                  style={[
-                    styles.priorityButton,
-                    {
-                      backgroundColor: priority === p.key ? p.color : colors.white,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  onPress={() => setPriority(p.key)}
-                >
-                  <Text
-                    style={[
-                      styles.priorityText,
-                      { color: priority === p.key ? '#fff' : colors.text },
-                    ]}
-                  >
-                    {p.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          <ScrollView style={styles.content}>
+            {/* Issue Title */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Issue Title *
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.white,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  },
+                ]}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter issue title"
+                placeholderTextColor={colors.textSecondary}
+              />
             </View>
-          </View>
 
-          {/* Description */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Description
-            </Text>
-            <TextInput
+            {/* Priority Selection */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Priority
+              </Text>
+              <View style={styles.priorityContainer}>
+                {priorities.map((p) => (
+                  <TouchableOpacity
+                    key={p.key}
+                    style={[
+                      styles.priorityButton,
+                      {
+                        backgroundColor: priority === p.key ? p.color : colors.white,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    onPress={() => setPriority(p.key)}
+                  >
+                    <Text
+                      style={[
+                        styles.priorityText,
+                        { color: priority === p.key ? '#fff' : colors.text },
+                      ]}
+                    >
+                      {p.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Due Date */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Due Date
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.dateInput,
+                  {
+                    backgroundColor: colors.white,
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <View style={styles.dateInputContent}>
+                  <Ionicons name="calendar" size={20} color={colors.coral} />
+                  <Text style={[
+                    styles.dateInputText,
+                    { color: dueDate ? colors.text : colors.textSecondary }
+                  ]}>
+                    {dueDate ? formatDate(dueDate) : 'Select due date (optional)'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Description */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Description
+              </Text>
+              <TextInput
+                style={[
+                  styles.textArea,
+                  {
+                    backgroundColor: colors.white,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  },
+                ]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Enter issue description"
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+              />
+            </View>
+          </ScrollView>
+
+          <View style={[styles.footer, { borderTopColor: colors.border }]}>
+            <TouchableOpacity
+              style={[styles.cancelButton, { borderColor: colors.border }]}
+              onPress={handleClose}
+            >
+              <Text style={[styles.cancelButtonText, { color: colors.text }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
               style={[
-                styles.textArea,
+                styles.createButton,
                 {
-                  backgroundColor: colors.white,
-                  borderColor: colors.border,
-                  color: colors.text,
+                  backgroundColor: isLoading ? colors.textSecondary : colors.coral,
                 },
               ]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Enter issue description"
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
-            />
+              onPress={handleCreateIssue}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.createButtonText}>Create Issue</Text>
+              )}
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-
-        <View style={[styles.footer, { borderTopColor: colors.border }]}>
-          <TouchableOpacity
-            style={[styles.cancelButton, { borderColor: colors.border }]}
-            onPress={handleClose}
-          >
-            <Text style={[styles.cancelButtonText, { color: colors.text }]}>
-              Cancel
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.createButton,
-              {
-                backgroundColor: isLoading ? colors.textSecondary : colors.coral,
-              },
-            ]}
-            onPress={handleCreateIssue}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.createButtonText}>Create Issue</Text>
-            )}
-          </TouchableOpacity>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+
+      {/* Google Calendar Picker */}
+      <GoogleCalendarPicker
+        visible={showDatePicker}
+        onClose={() => setShowDatePicker(false)}
+        onDateSelected={handleDateSelect}
+        title="Select Due Date"
+        minDate={new Date()}
+      />
+    </>
   );
 }
 
@@ -211,12 +268,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   closeButton: {
     padding: 4,
@@ -233,61 +291,81 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 12,
   },
-
   input: {
     borderWidth: 1,
     borderRadius: 8,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     fontSize: 16,
+  },
+  textArea: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    minHeight: 100,
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dateInputContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  dateInputText: {
+    fontSize: 16,
+    marginLeft: 8,
   },
   priorityContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   priorityButton: {
     flex: 1,
-    padding: 12,
-    borderRadius: 8,
     borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   priorityText: {
     fontSize: 14,
     fontWeight: '500',
   },
-  textArea: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 120,
-  },
   footer: {
     flexDirection: 'row',
-    padding: 20,
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderTopWidth: 1,
+    gap: 12,
   },
   cancelButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 8,
     borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   createButton: {
     flex: 1,
-    padding: 16,
     borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   createButtonText: {
-    color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
+    color: '#fff',
   },
 }); 

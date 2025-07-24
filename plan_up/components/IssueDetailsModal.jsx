@@ -14,6 +14,11 @@ import {
     View,
 } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
+import SubTaskModal from './SubTaskModal.jsx';
+import IssueLinksModal from './IssueLinksModal.jsx';
+import WorkflowModal from './WorkflowModal.jsx';
+import AdvancedSearchModal from './AdvancedSearchModal.jsx';
+import TimeTrackingModal from './TimeTrackingModal.jsx';
 
 export default function IssueDetailsModal({ 
   visible, 
@@ -23,10 +28,28 @@ export default function IssueDetailsModal({
   onAddComment,
   onAddTimeLog,
   onAddAttachment,
-  addDecisionLogToIssue = () => {}, // Add this prop
+  addDecisionLogToIssue = () => {},
   userName = 'anonymous',
   epics = [],
   sprints = [],
+  // New props for advanced features
+  subTasks = [],
+  linkedIssues = [],
+  allIssues = [],
+  timeLogs = [],
+  onAddSubTask,
+  onUpdateSubTask,
+  onDeleteSubTask,
+  onToggleSubTask,
+  onAddLink,
+  onRemoveLink,
+  onSearchIssues,
+  onAddTimeLogAdvanced,
+  onUpdateTimeLog,
+  onDeleteTimeLog,
+  onUpdateEstimate,
+  onSelectWorkflow,
+  currentWorkflow,
 }) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -39,14 +62,22 @@ export default function IssueDetailsModal({
   const [decisionLogText, setDecisionLogText] = useState('');
   const [decisionLogLoading, setDecisionLogLoading] = useState(false);
   const [decisionLogError, setDecisionLogError] = useState('');
-  // Remove: const userEmail = 'Current User';
+  
+  // New modal states
+  const [showSubTasksModal, setShowSubTasksModal] = useState(false);
+  const [showIssueLinksModal, setShowIssueLinksModal] = useState(false);
+  const [showWorkflowModal, setShowWorkflowModal] = useState(false);
+  const [showAdvancedSearchModal, setShowAdvancedSearchModal] = useState(false);
+  const [showTimeTrackingModal, setShowTimeTrackingModal] = useState(false);
 
   const tabs = [
     { key: 'details', label: 'Details', icon: 'document' },
+    { key: 'subtasks', label: 'Sub-tasks', icon: 'list' },
+    { key: 'links', label: 'Links', icon: 'link' },
     { key: 'comments', label: 'Comments', icon: 'chatbubbles' },
     { key: 'time', label: 'Time', icon: 'time' },
     { key: 'attachments', label: 'Attachments', icon: 'attach' },
-    { key: 'decisionLog', label: 'Decision Log', icon: 'book' }, // Add tab
+    { key: 'decisionLog', label: 'Decision Log', icon: 'book' },
   ];
 
   const priorityColors = {
@@ -131,8 +162,46 @@ export default function IssueDetailsModal({
     Alert.alert('Info', 'File upload functionality would be implemented here');
   };
 
+  const getSubTasksProgress = () => {
+    if (subTasks.length === 0) return 0;
+    const completed = subTasks.filter(task => task.completed).length;
+    return Math.round((completed / subTasks.length) * 100);
+  };
+
+  const getLinkedIssuesCount = () => {
+    return linkedIssues.length;
+  };
+
   const renderDetails = () => (
     <ScrollView style={styles.tabContent}>
+      {/* Workflow Status */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Workflow</Text>
+          <TouchableOpacity
+            style={[styles.workflowButton, { backgroundColor: colors.coral }]}
+            onPress={() => setShowWorkflowModal(true)}
+          >
+            <Ionicons name="settings" size={16} color="#fff" />
+            <Text style={styles.workflowButtonText}>Change</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.fieldRow}>
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Current Status:</Text>
+          <View style={[styles.badge, { backgroundColor: statusColors[issue?.status] }]}>
+            <Text style={styles.badgeText}>{issue?.status}</Text>
+          </View>
+        </View>
+        
+        {currentWorkflow && (
+          <View style={styles.fieldRow}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Workflow:</Text>
+            <Text style={[styles.fieldValue, { color: colors.text }]}>{currentWorkflow.name}</Text>
+          </View>
+        )}
+      </View>
+
       {/* Basic Info */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Basic Information</Text>
@@ -153,13 +222,6 @@ export default function IssueDetailsModal({
           <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Priority:</Text>
           <View style={[styles.badge, { backgroundColor: priorityColors[issue?.priority] }]}>
             <Text style={styles.badgeText}>{issue?.priority}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.fieldRow}>
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Status:</Text>
-          <View style={[styles.badge, { backgroundColor: statusColors[issue?.status] }]}>
-            <Text style={styles.badgeText}>{issue?.status}</Text>
           </View>
         </View>
       </View>
@@ -199,69 +261,191 @@ export default function IssueDetailsModal({
           <Text style={[styles.fieldValue, { color: colors.text }]}>{formatDateTime(issue?.updated)}</Text>
         </View>
         
-        <View style={styles.fieldRow}>
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Due Date:</Text>
-          <Text style={[styles.fieldValue, { color: colors.text }]}>{formatDate(issue?.dueDate)}</Text>
-        </View>
-      </View>
-
-      {/* Time Tracking */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Time Tracking</Text>
-        
-        <View style={styles.fieldRow}>
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Estimated:</Text>
-          <Text style={[styles.fieldValue, { color: colors.text }]}>{issue?.estimatedHours}h</Text>
-        </View>
-        
-        <View style={styles.fieldRow}>
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Logged:</Text>
-          <Text style={[styles.fieldValue, { color: colors.text }]}>{issue?.loggedHours}h</Text>
-        </View>
-        
-        <View style={styles.fieldRow}>
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Remaining:</Text>
-          <Text style={[styles.fieldValue, { color: colors.text }]}>{Math.max(0, issue?.estimatedHours - issue?.loggedHours)}h</Text>
-        </View>
-      </View>
-
-      {/* Labels & Components */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Labels</Text>
-        <View style={styles.tagsContainer}>
-          {issue?.labels?.map((label, index) => (
-            <View key={index} style={[styles.tag, { backgroundColor: colors.coral + '20' }]}>
-              <Text style={[styles.tagText, { color: colors.coral }]}>{label}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Components</Text>
-        <View style={styles.tagsContainer}>
-          {issue?.components?.map((component, index) => (
-            <View key={index} style={[styles.tag, { backgroundColor: colors.blue + '20' }]}>
-              <Text style={[styles.tagText, { color: colors.blue }]}>{component}</Text>
-            </View>
-          ))}
-        </View>
+        {issue?.dueDate && (
+          <View style={styles.fieldRow}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Due Date:</Text>
+            <Text style={[styles.fieldValue, { color: colors.text }]}>{formatDate(issue.dueDate)}</Text>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
 
+  const renderSubTasks = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Sub-tasks</Text>
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: colors.coral }]}
+          onPress={() => setShowSubTasksModal(true)}
+        >
+          <Ionicons name="add" size={16} color="#fff" />
+          <Text style={styles.addButtonText}>Add</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Progress Summary */}
+      <View style={[styles.progressCard, { backgroundColor: colors.white }]}>
+        <View style={styles.progressHeader}>
+          <Text style={[styles.progressTitle, { color: colors.text }]}>
+            Progress
+          </Text>
+          <Text style={[styles.progressText, { color: colors.textSecondary }]}>
+            {subTasks.filter(task => task.completed).length} of {subTasks.length} completed
+          </Text>
+        </View>
+        <View style={styles.progressBar}>
+          <View 
+            style={[
+              styles.progressFill, 
+              { 
+                width: `${getSubTasksProgress()}%`,
+                backgroundColor: colors.coral 
+              }
+            ]} 
+          />
+        </View>
+        <Text style={[styles.progressPercentage, { color: colors.textSecondary }]}>
+          {getSubTasksProgress()}%
+        </Text>
+      </View>
+
+      {/* Sub-tasks List */}
+      {subTasks.length === 0 ? (
+        <View style={[styles.emptyState, { backgroundColor: colors.white }]}>
+          <Ionicons name="list-outline" size={48} color={colors.textSecondary} />
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            No sub-tasks yet
+          </Text>
+          <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+            Add sub-tasks to break down this issue
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={subTasks}
+          renderItem={({ item }) => (
+            <View style={[styles.subTaskItem, { backgroundColor: colors.white }]}>
+              <View style={styles.subTaskContent}>
+                <View style={[
+                  styles.checkbox,
+                  { 
+                    backgroundColor: item.completed ? colors.coral : 'transparent',
+                    borderColor: item.completed ? colors.coral : colors.border
+                  }
+                ]}>
+                  {item.completed && (
+                    <Ionicons name="checkmark" size={16} color="#fff" />
+                  )}
+                </View>
+                <View style={styles.subTaskInfo}>
+                  <Text style={[
+                    styles.subTaskTitle,
+                    { 
+                      color: item.completed ? colors.textSecondary : colors.text,
+                      textDecorationLine: item.completed ? 'line-through' : 'none'
+                    }
+                  ]}>
+                    {item.title}
+                  </Text>
+                  <Text style={[styles.subTaskStatus, { color: colors.textSecondary }]}>
+                    {item.status}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+          keyExtractor={(item) => item.id}
+          scrollEnabled={false}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </View>
+  );
+
+  const renderLinks = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Issue Links</Text>
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: colors.coral }]}
+          onPress={() => setShowIssueLinksModal(true)}
+        >
+          <Ionicons name="add" size={16} color="#fff" />
+          <Text style={styles.addButtonText}>Add</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Links Summary */}
+      <View style={[styles.linksCard, { backgroundColor: colors.white }]}>
+        <View style={styles.linksHeader}>
+          <Ionicons name="link" size={24} color={colors.coral} />
+          <View style={styles.linksInfo}>
+            <Text style={[styles.linksCount, { color: colors.text }]}>
+              {getLinkedIssuesCount()} linked issues
+            </Text>
+            <Text style={[styles.linksSubtext, { color: colors.textSecondary }]}>
+              View and manage issue relationships
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Quick Links */}
+      {linkedIssues.length === 0 ? (
+        <View style={[styles.emptyState, { backgroundColor: colors.white }]}>
+          <Ionicons name="link-outline" size={48} color={colors.textSecondary} />
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            No linked issues
+          </Text>
+          <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+            Link this issue to other issues to show relationships
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={linkedIssues.slice(0, 5)} // Show first 5
+          renderItem={({ item }) => (
+            <View style={[styles.linkedIssueItem, { backgroundColor: colors.white }]}>
+              <View style={styles.linkedIssueContent}>
+                <Text style={[styles.linkedIssueKey, { color: colors.text }]}>
+                  {item.issue.key}
+                </Text>
+                <Text style={[styles.linkedIssueTitle, { color: colors.text }]} numberOfLines={2}>
+                  {item.issue.title}
+                </Text>
+                <View style={styles.linkedIssueMeta}>
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.issue.status) + '20' }]}>
+                    <Text style={[styles.statusText, { color: getStatusColor(item.issue.status) }]}>
+                      {item.issue.status}
+                    </Text>
+                  </View>
+                  <Text style={[styles.linkType, { color: colors.textSecondary }]}>
+                    {item.linkType}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+          keyExtractor={(item) => item.id}
+          scrollEnabled={false}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </View>
+  );
+
   const renderComments = () => (
     <View style={styles.tabContent}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Comments</Text>
+      
       <FlatList
         data={issue?.comments || []}
-        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={[styles.commentItem, { backgroundColor: colors.white }]}>
             <View style={styles.commentHeader}>
               <Text style={[styles.commentAuthor, { color: colors.text }]}>{item.author}</Text>
-              <Text style={[styles.commentTime, { color: colors.textSecondary }]}>
-                {formatDateTime(item.timestamp)}
-              </Text>
+              <Text style={[styles.commentTime, { color: colors.textSecondary }]}> {formatDateTime(item.createdAt)} </Text>
             </View>
             <Text style={[styles.commentContent, { color: colors.text }]}>{item.content}</Text>
           </View>
@@ -302,135 +486,144 @@ export default function IssueDetailsModal({
             </TouchableOpacity>
           </View>
         }
+        scrollEnabled={false}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
 
   const renderTimeLogs = () => (
     <View style={styles.tabContent}>
-      <FlatList
-        data={issue?.timeLogs || []}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.timeLogItem, { backgroundColor: colors.white }]}>
-            <View style={styles.timeLogHeader}>
-              <Text style={[styles.timeLogAuthor, { color: colors.text }]}>{item.author}</Text>
-              <Text style={[styles.timeLogHours, { color: colors.coral }]}>{item.hours}h</Text>
-            </View>
-            <Text style={[styles.timeLogDescription, { color: colors.text }]}>{item.description}</Text>
-            <Text style={[styles.timeLogDate, { color: colors.textSecondary }]}>
-              {formatDate(item.date)}
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Time Tracking</Text>
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: colors.coral }]}
+          onPress={() => setShowTimeTrackingModal(true)}
+        >
+          <Ionicons name="time" size={16} color="#fff" />
+          <Text style={styles.addButtonText}>Track</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Time Summary */}
+      <View style={[styles.timeSummaryCard, { backgroundColor: colors.white }]}>
+        <View style={styles.timeSummaryHeader}>
+          <Ionicons name="time" size={24} color={colors.coral} />
+          <View style={styles.timeSummaryInfo}>
+            <Text style={[styles.timeSummaryTitle, { color: colors.text }]}>
+              Time Summary
+            </Text>
+            <Text style={[styles.timeSummarySubtext, { color: colors.textSecondary }]}>
+              View detailed time tracking and reports
             </Text>
           </View>
-        )}
-        ListFooterComponent={
-          <View style={styles.addTimeLogSection}>
-            <View style={styles.timeLogInputRow}>
-              <TextInput
-                style={[
-                  styles.timeLogInput,
-                  {
-                    backgroundColor: colors.white,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
-                value={timeLogHours}
-                onChangeText={setTimeLogHours}
-                placeholder="Hours"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="numeric"
-              />
-              <TextInput
-                style={[
-                  styles.timeLogInput,
-                  {
-                    backgroundColor: colors.white,
-                    borderColor: colors.border,
-                    color: colors.text,
-                    flex: 1,
-                    marginLeft: 8,
-                  },
-                ]}
-                value={timeLogDescription}
-                onChangeText={setTimeLogDescription}
-                placeholder="Description"
-                placeholderTextColor={colors.textSecondary}
-              />
-            </View>
-            <TouchableOpacity
+        </View>
+      </View>
+
+      {/* Quick Time Log */}
+      <View style={[styles.quickTimeLog, { backgroundColor: colors.white }]}>
+        <Text style={[styles.quickTimeLogTitle, { color: colors.text }]}>
+          Quick Time Log
+        </Text>
+        
+        <View style={styles.timeInputRow}>
+          <View style={styles.timeInputContainer}>
+            <Text style={[styles.timeInputLabel, { color: colors.textSecondary }]}>Hours</Text>
+            <TextInput
               style={[
-                styles.addButton,
+                styles.timeInput,
                 {
-                  backgroundColor: isLoading ? colors.textSecondary : colors.coral,
+                  backgroundColor: colors.white,
+                  borderColor: colors.border,
+                  color: colors.text,
                 },
               ]}
-              onPress={handleAddTimeLog}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.addButtonText}>Log Time</Text>
-              )}
-            </TouchableOpacity>
+              value={timeLogHours}
+              onChangeText={setTimeLogHours}
+              placeholder="0"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="numeric"
+            />
           </View>
-        }
-      />
+          
+          <View style={styles.timeInputContainer}>
+            <Text style={[styles.timeInputLabel, { color: colors.textSecondary }]}>Description</Text>
+            <TextInput
+              style={[
+                styles.timeDescriptionInput,
+                {
+                  backgroundColor: colors.white,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={timeLogDescription}
+              onChangeText={setTimeLogDescription}
+              placeholder="What did you work on?"
+              placeholderTextColor={colors.textSecondary}
+            />
+          </View>
+        </View>
+        
+        <TouchableOpacity
+          style={[
+            styles.logTimeButton,
+            {
+              backgroundColor: isLoading ? colors.textSecondary : colors.coral,
+            },
+          ]}
+          onPress={handleAddTimeLog}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.logTimeButtonText}>Log Time</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
   const renderAttachments = () => (
     <View style={styles.tabContent}>
-      <FlatList
-        data={issue?.attachments || []}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.attachmentItem, { backgroundColor: colors.white }]}>
-            <Ionicons name="document" size={24} color={colors.coral} />
-            <View style={styles.attachmentInfo}>
-              <Text style={[styles.attachmentName, { color: colors.text }]}>{item.name}</Text>
-              <Text style={[styles.attachmentDetails, { color: colors.textSecondary }]}>
-                {item.size} • {item.uploadedBy} • {formatDateTime(item.uploadedAt)}
-              </Text>
-            </View>
-            <TouchableOpacity>
-              <Ionicons name="download" size={20} color={colors.blue} />
-            </TouchableOpacity>
-          </View>
-        )}
-        ListFooterComponent={
-          <TouchableOpacity
-            style={[styles.addAttachmentButton, { borderColor: colors.border }]}
-            onPress={handleAddAttachment}
-          >
-            <Ionicons name="add" size={24} color={colors.coral} />
-            <Text style={[styles.addAttachmentText, { color: colors.coral }]}>Add Attachment</Text>
-          </TouchableOpacity>
-        }
-      />
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Attachments</Text>
+      
+      <TouchableOpacity
+        style={[styles.uploadButton, { backgroundColor: colors.white, borderColor: colors.border }]}
+        onPress={handleAddAttachment}
+      >
+        <Ionicons name="cloud-upload" size={32} color={colors.coral} />
+        <Text style={[styles.uploadText, { color: colors.text }]}>
+          Upload Files
+        </Text>
+        <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>
+          Drag and drop files here or click to browse
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 
   const renderDecisionLog = () => (
     <View style={styles.tabContent}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Decision Log</Text>
+      
       <FlatList
         data={issue?.decisionLog || []}
-        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={[styles.commentItem, { backgroundColor: colors.white }]}> {/* Reuse commentItem style */}
-            <View style={styles.commentHeader}>
-              <Text style={[styles.commentAuthor, { color: colors.text }]}>{item.author}</Text>
-              <Text style={[styles.commentTime, { color: colors.textSecondary }]}> {formatDateTime(item.createdAt)} </Text>
+          <View style={[styles.decisionItem, { backgroundColor: colors.white }]}>
+            <View style={styles.decisionHeader}>
+              <Text style={[styles.decisionAuthor, { color: colors.text }]}>{item.author}</Text>
+              <Text style={[styles.decisionTime, { color: colors.textSecondary }]}> {formatDateTime(item.createdAt)} </Text>
             </View>
-            <Text style={[styles.commentContent, { color: colors.text }]}>{item.content}</Text>
+            <Text style={[styles.decisionContent, { color: colors.text }]}>{item.content}</Text>
           </View>
         )}
         ListFooterComponent={
-          <View style={styles.addCommentSection}>
+          <View style={styles.addDecisionSection}>
             <TextInput
               style={[
-                styles.commentInput,
+                styles.decisionInput,
                 {
                   backgroundColor: colors.white,
                   borderColor: colors.border,
@@ -481,6 +674,8 @@ export default function IssueDetailsModal({
             </TouchableOpacity>
           </View>
         }
+        scrollEnabled={false}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
@@ -489,6 +684,10 @@ export default function IssueDetailsModal({
     switch (activeTab) {
       case 'details':
         return renderDetails();
+      case 'subtasks':
+        return renderSubTasks();
+      case 'links':
+        return renderLinks();
       case 'comments':
         return renderComments();
       case 'time':
@@ -502,59 +701,124 @@ export default function IssueDetailsModal({
     }
   };
 
-  if (!issue) return null;
+  const getStatusColor = (status) => {
+    const statusColors = {
+      'To Do': '#E5E5E5',
+      'In Progress': '#FF6B6B',
+      'Done': '#4ECDC4',
+    };
+    return statusColors[status] || '#E5E5E5';
+  };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.issueKey, { color: colors.text }]}>{issue.key}</Text>
-            <Text style={[styles.issueTitle, { color: colors.text }]}>{issue.title}</Text>
-          </View>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Tab Navigation */}
-        <View style={[styles.tabContainer, { borderBottomColor: colors.border }]}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[
-                styles.tab,
-                {
-                  borderBottomColor: activeTab === tab.key ? colors.coral : 'transparent',
-                },
-              ]}
-              onPress={() => setActiveTab(tab.key)}
-            >
-              <Ionicons 
-                name={tab.icon} 
-                size={20} 
-                color={activeTab === tab.key ? colors.coral : colors.textSecondary} 
-              />
-              <Text 
-                style={[
-                  styles.tabText,
-                  { color: activeTab === tab.key ? colors.coral : colors.textSecondary }
-                ]}
-              >
-                {tab.label}
-              </Text>
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={onClose}
+      >
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              {issue?.key} - {issue?.title}
+            </Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
-          ))}
-        </View>
+          </View>
 
-        {renderTabContent()}
-      </View>
-    </Modal>
+          {/* Tabs */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer}>
+            {tabs.map(tab => (
+              <TouchableOpacity
+                key={tab.key}
+                style={[
+                  styles.tabButton,
+                  {
+                    backgroundColor: activeTab === tab.key ? colors.coral : colors.white,
+                    borderColor: activeTab === tab.key ? colors.coral : colors.border,
+                  },
+                ]}
+                onPress={() => setActiveTab(tab.key)}
+              >
+                <Ionicons 
+                  name={tab.icon} 
+                  size={18} 
+                  color={activeTab === tab.key ? '#fff' : colors.textSecondary} 
+                />
+                <Text style={[
+                  styles.tabText,
+                  { color: activeTab === tab.key ? '#fff' : colors.text }
+                ]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Tab Content */}
+          <ScrollView style={styles.content}>
+            {renderTabContent()}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Sub-tasks Modal */}
+      <SubTaskModal
+        visible={showSubTasksModal}
+        parentIssue={issue}
+        subTasks={subTasks}
+        onClose={() => setShowSubTasksModal(false)}
+        onAddSubTask={onAddSubTask}
+        onUpdateSubTask={onUpdateSubTask}
+        onDeleteSubTask={onDeleteSubTask}
+        onToggleSubTask={onToggleSubTask}
+      />
+
+      {/* Issue Links Modal */}
+      <IssueLinksModal
+        visible={showIssueLinksModal}
+        currentIssue={issue}
+        linkedIssues={linkedIssues}
+        allIssues={allIssues}
+        onClose={() => setShowIssueLinksModal(false)}
+        onAddLink={onAddLink}
+        onRemoveLink={onRemoveLink}
+        onSearchIssues={onSearchIssues}
+      />
+
+      {/* Workflow Modal */}
+      <WorkflowModal
+        visible={showWorkflowModal}
+        currentWorkflow={currentWorkflow}
+        onClose={() => setShowWorkflowModal(false)}
+        onSelectWorkflow={onSelectWorkflow}
+      />
+
+      {/* Advanced Search Modal */}
+      <AdvancedSearchModal
+        visible={showAdvancedSearchModal}
+        issues={allIssues}
+        onClose={() => setShowAdvancedSearchModal(false)}
+        onSearch={(searchResults) => {
+          // Handle search results
+          console.log('Search results:', searchResults);
+        }}
+      />
+
+      {/* Time Tracking Modal */}
+      <TimeTrackingModal
+        visible={showTimeTrackingModal}
+        issue={issue}
+        timeLogs={timeLogs}
+        onClose={() => setShowTimeTrackingModal(false)}
+        onAddTimeLog={onAddTimeLogAdvanced}
+        onUpdateTimeLog={onUpdateTimeLog}
+        onDeleteTimeLog={onDeleteTimeLog}
+        onUpdateEstimate={onUpdateEstimate}
+      />
+    </>
   );
 }
 
@@ -565,55 +829,72 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 20,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
   },
-  headerLeft: {
-    flex: 1,
-    marginRight: 16,
-  },
-  issueKey: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  issueTitle: {
+  headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 12,
   },
   closeButton: {
     padding: 4,
   },
-  tabContainer: {
-    flexDirection: 'row',
+  tabsContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
   },
-  tab: {
-    flex: 1,
+  tabButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 8,
+    gap: 6,
   },
   tabText: {
-    marginLeft: 4,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  content: {
+    flex: 1,
+    padding: 20,
   },
   tabContent: {
     flex: 1,
   },
   section: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 12,
+  },
+  workflowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  workflowButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#fff',
   },
   fieldRow: {
     flexDirection: 'row',
@@ -635,42 +916,168 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   badgeText: {
-    color: '#fff',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
+    color: '#fff',
   },
   description: {
     fontSize: 14,
     lineHeight: 20,
   },
-  tagsContainer: {
+  addButton: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  tag: {
+    alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 6,
+    gap: 4,
   },
-  tagText: {
+  addButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#fff',
+  },
+  progressCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  progressText: {
+    fontSize: 12,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressPercentage: {
+    fontSize: 12,
+    textAlign: 'right',
+  },
+  subTaskItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  subTaskContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  subTaskInfo: {
+    flex: 1,
+  },
+  subTaskTitle: {
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  subTaskStatus: {
+    fontSize: 12,
+  },
+  linksCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  linksHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  linksInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  linksCount: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  linksSubtext: {
+    fontSize: 12,
+  },
+  linkedIssueItem: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  linkedIssueContent: {
+    flex: 1,
+  },
+  linkedIssueKey: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  linkedIssueTitle: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  linkedIssueMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  statusText: {
     fontSize: 12,
     fontWeight: '500',
   },
+  linkType: {
+    fontSize: 12,
+  },
   commentItem: {
-    padding: 16,
-    marginHorizontal: 20,
-    marginVertical: 4,
+    padding: 12,
     borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
   },
   commentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 4,
   },
   commentAuthor: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   commentTime: {
     fontSize: 12,
@@ -680,99 +1087,153 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   addCommentSection: {
-    padding: 20,
+    marginTop: 16,
   },
   commentInput: {
     borderWidth: 1,
     borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
     marginBottom: 12,
-    minHeight: 80,
   },
-  timeLogItem: {
+  timeSummaryCard: {
     padding: 16,
-    marginHorizontal: 20,
-    marginVertical: 4,
-    borderRadius: 8,
-  },
-  timeLogHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  timeLogAuthor: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  timeLogHours: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  timeLogDescription: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  timeLogDate: {
-    fontSize: 12,
-  },
-  addTimeLogSection: {
-    padding: 20,
-  },
-  timeLogInputRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  timeLogInput: {
+    borderRadius: 12,
+    marginBottom: 16,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    width: 80,
+    borderColor: '#E5E5E5',
   },
-  attachmentItem: {
+  timeSummaryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    marginHorizontal: 20,
-    marginVertical: 4,
-    borderRadius: 8,
   },
-  attachmentInfo: {
-    flex: 1,
+  timeSummaryInfo: {
     marginLeft: 12,
+    flex: 1,
   },
-  attachmentName: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  attachmentDetails: {
-    fontSize: 12,
-  },
-  addAttachmentButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    margin: 20,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderRadius: 8,
-  },
-  addAttachmentText: {
-    marginLeft: 8,
+  timeSummaryTitle: {
     fontSize: 16,
     fontWeight: '600',
   },
-  addButton: {
-    padding: 12,
+  timeSummarySubtext: {
+    fontSize: 12,
+  },
+  quickTimeLog: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  quickTimeLogTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 12,
+  },
+  timeInputRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  timeInputContainer: {
+    flex: 1,
+  },
+  timeInputLabel: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  timeInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  timeDescriptionInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+  },
+  logTimeButton: {
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
-  addButtonText: {
-    color: '#fff',
+  logTimeButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
+    color: '#fff',
+  },
+  uploadButton: {
+    alignItems: 'center',
+    padding: 40,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+  },
+  uploadText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  uploadSubtext: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  decisionItem: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  decisionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  decisionAuthor: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  decisionTime: {
+    fontSize: 12,
+  },
+  decisionContent: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  addDecisionSection: {
+    marginTop: 16,
+  },
+  decisionInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 }); 

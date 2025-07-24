@@ -13,6 +13,7 @@ import { useUser, useAuth, useOrganizationList } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors.jsx';
 import { useColorScheme } from 'react-native';
+import NotificationTestButton from '../../components/NotificationTestButton';
 
 export default function SettingsScreen() {
   const { user } = useUser();
@@ -219,6 +220,14 @@ export default function SettingsScreen() {
         })}
       </View>
 
+      {/* Notification Testing */}
+      <View style={[styles.section, { backgroundColor: colors.white }]}>
+        {renderSectionHeader('Notification Testing')}
+        <View style={styles.notificationTestContainer}>
+          <NotificationTestButton />
+        </View>
+      </View>
+
       {/* Support */}
       <View style={[styles.section, { backgroundColor: colors.white }]}>
         {renderSectionHeader('Support')}
@@ -353,5 +362,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  notificationTestContainer: {
+    paddingVertical: 8,
   },
 }); 
