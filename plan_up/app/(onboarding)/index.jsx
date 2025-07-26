@@ -192,6 +192,11 @@ export default function OnboardingScreen() {
   );
 }
 
+// Hide header for onboarding screen
+OnboardingScreen.options = {
+  headerShown: false,
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

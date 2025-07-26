@@ -21,7 +21,7 @@ export default function Index() {
         router.replace('/(tabs)');
       } else {
         // User is not signed in, show onboarding first
-        router.replace('/onboarding');
+        router.replace('/(onboarding)');
       }
     }
   }, [isSignedIn, isLoaded, isRedirecting]);

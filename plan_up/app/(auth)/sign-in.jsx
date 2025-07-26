@@ -79,6 +79,11 @@ export default function SignInScreen() {
   );
 }
 
+// Hide header for sign-in screen
+SignInScreen.options = {
+  headerShown: false,
+};
+
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 24 },

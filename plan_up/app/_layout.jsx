@@ -7,7 +7,6 @@ import { Colors } from '../constants/Colors.jsx';
 import { ClerkProvider } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import Constants from 'expo-constants';
 import ErrorBoundary from '../components/ErrorBoundary.jsx';
 import { OrganizationProvider } from '../components/OrganizationContext.jsx';
 import { useUser } from '@clerk/clerk-expo';
@@ -83,7 +82,7 @@ function AppProviders({ children }) {
 }
 
 export default function RootLayout() {
-  const publishableKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
