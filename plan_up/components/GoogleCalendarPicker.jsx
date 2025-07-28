@@ -24,6 +24,7 @@ export default function GoogleCalendarPicker({
   maxDate = null,
   showTime = false
 }) {
+  console.log('GoogleCalendarPicker rendered with visible:', visible);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   
@@ -32,6 +33,14 @@ export default function GoogleCalendarPicker({
   const [isLoading, setIsLoading] = useState(false);
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [isCalendarConnected, setIsCalendarConnected] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  // Ensure selectedDate is always a valid Date object
+  useEffect(() => {
+    if (!selectedDate || !(selectedDate instanceof Date) || isNaN(selectedDate.getTime())) {
+      setSelectedDate(new Date());
+    }
+  }, [selectedDate]);
 
   // Mock Google Calendar events for demo
   const mockCalendarEvents = [
@@ -81,7 +90,12 @@ export default function GoogleCalendarPicker({
   };
 
   const handleDateSelect = (date) => {
-    setSelectedDate(date);
+    try {
+      console.log('Date selected in picker:', date);
+      setSelectedDate(date);
+    } catch (error) {
+      console.error('Error in handleDateSelect:', error);
+    }
   };
 
   const handleTimeChange = (time) => {
@@ -89,59 +103,124 @@ export default function GoogleCalendarPicker({
   };
 
   const handleConfirm = () => {
-    const finalDate = new Date(selectedDate);
-    if (showTime) {
-      const [hours, minutes] = selectedTime.split(':');
-      finalDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    try {
+      const finalDate = new Date(selectedDate);
+      if (showTime) {
+        const [hours, minutes] = selectedTime.split(':');
+        finalDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      
+      console.log('Date selected:', finalDate);
+      onDateSelected(finalDate);
+      onClose();
+    } catch (error) {
+      console.error('Error in handleConfirm:', error);
+      Alert.alert('Error', 'Failed to select date. Please try again.');
     }
-    
-    onDateSelected(finalDate);
-    onClose();
   };
 
   const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    try {
+      if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid Date';
+    }
   };
 
   const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    try {
+      if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+        return 'Invalid Time';
+      }
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return 'Invalid Time';
+    }
   };
 
   const getDaysInMonth = (date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDayOfMonth = new Date(year, month, 1).getDay();
-    
-    const days = [];
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push(null);
+    try {
+      if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+        return [];
+      }
+      
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const firstDayOfMonth = new Date(year, month, 1).getDay();
+      
+      const days = [];
+      
+      // Add empty cells for days before the first day of the month
+      for (let i = 0; i < firstDayOfMonth; i++) {
+        days.push(null);
+      }
+      
+      // Add days of the month
+      for (let day = 1; day <= daysInMonth; day++) {
+        days.push(new Date(year, month, day));
+      }
+      
+      return days;
+    } catch (error) {
+      console.error('Error in getDaysInMonth:', error);
+      return [];
     }
-    
-    // Add days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day));
+  };
+
+  const navigateMonth = (direction) => {
+    try {
+      if (!currentMonth || !(currentMonth instanceof Date) || isNaN(currentMonth.getTime())) {
+        setCurrentMonth(new Date());
+        return;
+      }
+      
+      const newMonth = new Date(currentMonth);
+      if (direction === 'prev') {
+        newMonth.setMonth(newMonth.getMonth() - 1);
+      } else {
+        newMonth.setMonth(newMonth.getMonth() + 1);
+      }
+      setCurrentMonth(newMonth);
+    } catch (error) {
+      console.error('Error in navigateMonth:', error);
+      setCurrentMonth(new Date());
     }
-    
-    return days;
   };
 
   const renderCalendar = () => {
-    const days = getDaysInMonth(selectedDate);
-    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    try {
+      const days = getDaysInMonth(currentMonth);
+      const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     
     return (
       <View style={styles.calendarContainer}>
+        {/* Month Navigation */}
+        <View style={styles.monthNavigation}>
+          <TouchableOpacity onPress={() => navigateMonth('prev')} style={styles.navButton}>
+            <Ionicons name="chevron-back" size={20} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.monthTitle, { color: colors.text }]}>
+            {currentMonth ? currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Loading...'}
+          </Text>
+          <TouchableOpacity onPress={() => navigateMonth('next')} style={styles.navButton}>
+            <Ionicons name="chevron-forward" size={20} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.calendarHeader}>
           {weekDays.map(day => (
             <Text key={day} style={[styles.weekDay, { color: colors.textSecondary }]}>
@@ -156,11 +235,15 @@ export default function GoogleCalendarPicker({
               return <View key={index} style={styles.calendarDay} />;
             }
             
-            const isSelected = day.toDateString() === selectedDate.toDateString();
-            const isToday = day.toDateString() === new Date().toDateString();
+            const isSelected = day && selectedDate && day.toDateString() === selectedDate.toDateString();
+            const isToday = day && day.toDateString() === new Date().toDateString();
             const hasEvent = calendarEvents.some(event => 
+              event && event.start && day && 
               event.start.toDateString() === day.toDateString()
             );
+            
+            // Check if date is disabled (before minDate or after maxDate)
+            const isDisabled = day && ((minDate && day < minDate) || (maxDate && day > maxDate));
             
             return (
               <TouchableOpacity
@@ -169,17 +252,20 @@ export default function GoogleCalendarPicker({
                   styles.calendarDay,
                   isSelected && { backgroundColor: colors.coral },
                   isToday && { borderColor: colors.blue, borderWidth: 2 },
+                  isDisabled && { opacity: 0.3 },
                 ]}
-                onPress={() => handleDateSelect(day)}
+                onPress={() => !isDisabled && day && handleDateSelect(day)}
+                disabled={isDisabled}
               >
                 <Text style={[
                   styles.dayText,
                   { color: isSelected ? '#fff' : colors.text },
                   isToday && !isSelected && { color: colors.blue },
+                  isDisabled && { color: colors.textSecondary },
                 ]}>
-                  {day.getDate()}
+                  {day && day.getDate ? day.getDate().toString() : ''}
                 </Text>
-                {hasEvent && (
+                {hasEvent && !isDisabled && (
                   <View style={[styles.eventDot, { backgroundColor: colors.blue }]} />
                 )}
               </TouchableOpacity>
@@ -188,6 +274,16 @@ export default function GoogleCalendarPicker({
         </View>
       </View>
     );
+    } catch (error) {
+      console.error('Error in renderCalendar:', error);
+      return (
+        <View style={styles.calendarContainer}>
+          <Text style={[styles.monthTitle, { color: colors.text }]}>
+            Error loading calendar
+          </Text>
+        </View>
+      );
+    }
   };
 
   const renderTimePicker = () => {
@@ -220,6 +316,7 @@ export default function GoogleCalendarPicker({
     if (!isCalendarConnected || calendarEvents.length === 0) return null;
     
     const selectedDateEvents = calendarEvents.filter(event => 
+      event && event.start && selectedDate &&
       event.start.toDateString() === selectedDate.toDateString()
     );
     
@@ -253,6 +350,7 @@ export default function GoogleCalendarPicker({
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}
+      transparent={false}
     >
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
@@ -323,28 +421,26 @@ export default function GoogleCalendarPicker({
 
           {/* Calendar Events */}
           {renderCalendarEvents()}
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[styles.cancelButton, { borderColor: colors.border }]}
-              onPress={onClose}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.text }]}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.confirmButton, { backgroundColor: colors.coral }]}
-              onPress={handleConfirm}
-            >
-              <Text style={styles.confirmButtonText}>
-                Confirm
-              </Text>
-            </TouchableOpacity>
-          </View>
         </ScrollView>
+
+        {/* Footer */}
+        <View style={[styles.footer, { borderTopColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.cancelButton, { borderColor: colors.border }]}
+            onPress={onClose}
+          >
+            <Text style={[styles.cancelButtonText, { color: colors.text }]}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.confirmButton, { backgroundColor: colors.coral }]}
+            onPress={handleConfirm}
+          >
+            <Text style={styles.confirmButtonText}>Confirm</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </Modal>
   );
@@ -386,8 +482,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
   },
   statusInfo: {
     marginLeft: 12,
@@ -396,40 +490,50 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 16,
     fontWeight: '600',
+    marginBottom: 4,
   },
   statusSubtitle: {
     fontSize: 14,
-    marginTop: 2,
   },
   selectedDateCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
   },
   selectedDateText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     marginLeft: 12,
   },
   calendarContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+  },
+  monthNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  navButton: {
+    padding: 8,
+  },
+  monthTitle: {
+    fontSize: 18,
+    fontWeight: '600',
   },
   calendarHeader: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   weekDay: {
     flex: 1,
     textAlign: 'center',
     fontSize: 12,
     fontWeight: '600',
+    paddingVertical: 8,
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -448,9 +552,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   eventDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     position: 'absolute',
     bottom: 4,
   },
@@ -467,13 +571,11 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
   },
   eventColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 4,
+    height: 40,
+    borderRadius: 2,
     marginRight: 12,
   },
   eventInfo: {
@@ -481,11 +583,11 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
+    marginBottom: 2,
   },
   eventTime: {
     fontSize: 12,
-    marginTop: 2,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -495,10 +597,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
   },
-  actionButtons: {
+  footer: {
     flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
     gap: 12,
-    marginTop: 20,
   },
   cancelButton: {
     flex: 1,
@@ -519,7 +623,7 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#fff',
   },
 }); 

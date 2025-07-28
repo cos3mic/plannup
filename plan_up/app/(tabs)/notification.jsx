@@ -82,9 +82,7 @@ const notificationColors = {
 export default function NotificationScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const [selectedFilter, setSelectedFilter] = useState('All');
 
-  const filters = ['All', 'Unread', 'Mentions', 'Assigned'];
 
   const renderNotificationCard = ({ item }) => (
     <TouchableOpacity style={[
@@ -140,31 +138,7 @@ export default function NotificationScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Filter Tabs */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        {filters.map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[
-              styles.filterTab,
-              selectedFilter === filter && { backgroundColor: colors.coral }
-            ]}
-            onPress={() => setSelectedFilter(filter)}
-          >
-            <Text style={[
-              styles.filterText,
-              { color: selectedFilter === filter ? colors.white : colors.text }
-            ]}>
-              {filter}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+
 
       {/* Notification Stats */}
       <View style={styles.statsContainer}>
@@ -226,30 +200,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  filterContainer: {
-    paddingHorizontal: 20,
-  },
-  filterContent: {
-    paddingRight: 20,
-  },
-  filterTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 70,
-  },
-  filterText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-  },
+
   statsContainer: {
     flexDirection: 'row',
     padding: 20,

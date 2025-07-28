@@ -11,12 +11,8 @@ export default function SprintsScreen() {
   const colors = Colors[colorScheme ?? 'light'];
   const [isSprintModalVisible, setIsSprintModalVisible] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState(null);
-  const [selectedFilter, setSelectedFilter] = useState('All');
-
   const { sprints, addSprint, updateSprint, deleteSprint } = useSprints();
   const { issues } = useIssues();
-
-  const filters = ['All', 'Active', 'Completed', 'Planned'];
 
   const teamMembers = [
     'John Doe',
@@ -90,7 +86,7 @@ export default function SprintsScreen() {
       >
         <View style={styles.sprintHeader}>
           <View style={styles.sprintInfo}>
-            <Text style={[styles.sprintName, { color: colors.text }]}>{item.name}</Text>
+            <Text style={[styles.sprintName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
               <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
                 {getStatusLabel(item.status)}
@@ -165,13 +161,7 @@ export default function SprintsScreen() {
     await deleteSprint(sprintId);
   };
 
-  const filteredSprints = sprints.filter(sprint => {
-    if (selectedFilter === 'All') return true;
-    if (selectedFilter === 'Active') return sprint.status === 'active';
-    if (selectedFilter === 'Completed') return sprint.status === 'completed';
-    if (selectedFilter === 'Planned') return sprint.status === 'planned';
-    return true;
-  });
+
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -188,36 +178,7 @@ export default function SprintsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Filter Tabs */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        {filters.map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[
-              styles.filterTab,
-              { 
-                backgroundColor: selectedFilter === filter ? colors.coral : 'transparent',
-                borderColor: selectedFilter === filter ? colors.coral : colors.border
-              }
-            ]}
-            onPress={() => setSelectedFilter(filter)}
-          >
-            <Text 
-              style={[
-                styles.filterText,
-                { color: selectedFilter === filter ? colors.white : colors.text }
-              ]}
-            >
-              {filter}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+
 
       {/* Sprint Stats */}
       <View style={styles.statsContainer}>
@@ -246,7 +207,7 @@ export default function SprintsScreen() {
 
       {/* Sprints List */}
       <FlatList
-        data={filteredSprints}
+        data={sprints}
         renderItem={renderSprintCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
@@ -290,28 +251,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  filterContainer: {
-    paddingHorizontal: 20,
-  },
-  filterContent: {
-    gap: 8,
-  },
-  filterTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 70,
-  },
-  filterText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -366,11 +305,13 @@ const styles = StyleSheet.create({
   },
   sprintInfo: {
     flex: 1,
+    marginRight: 8,
   },
   sprintName: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 4,
+    flexShrink: 1,
   },
   statusBadge: {
     alignSelf: 'flex-start',
@@ -386,6 +327,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 12,
     lineHeight: 20,
+    flexShrink: 1,
   },
   sprintStats: {
     flexDirection: 'row',
@@ -399,6 +341,7 @@ const styles = StyleSheet.create({
   statText: {
     marginLeft: 4,
     fontSize: 12,
+    flexShrink: 1,
   },
   progressContainer: {
     flexDirection: 'row',
@@ -426,5 +369,6 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
+    flexShrink: 1,
   },
 }); 

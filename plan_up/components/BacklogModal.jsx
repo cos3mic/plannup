@@ -388,17 +388,17 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   filterTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     borderWidth: 1,
     marginRight: 8,
-    minWidth: 80,
+    minWidth: 70,
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   content: {

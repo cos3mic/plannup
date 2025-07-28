@@ -7,8 +7,6 @@ import { Colors } from '../../constants/Colors.jsx';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '@clerk/clerk-expo';
 
-// Remove the static issueData as we'll use the hook
-
 const statusColors = {
   'To Do': '#E5E5E5',
   'In Progress': '#FF6B6B',
@@ -30,7 +28,6 @@ const typeColors = {
 export default function AllWorkScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const [selectedFilter, setSelectedFilter] = useState('All');
   const [isIssueDetailsModalVisible, setIsIssueDetailsModalVisible] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState(null);
   
@@ -38,7 +35,7 @@ export default function AllWorkScreen() {
   const { user } = useUser();
   const userName = user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress || 'anonymous';
 
-  const filters = ['All', 'My Work', 'Recent', 'Overdue'];
+
 
   const renderIssueCard = ({ item }) => (
     <TouchableOpacity 
@@ -81,60 +78,45 @@ export default function AllWorkScreen() {
     </TouchableOpacity>
   );
 
+  const   renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="list-outline" size={64} color={colors.textSecondary} />
+      <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
+        No issues found
+      </Text>
+      <Text style={[styles.emptyStateSubtitle, { color: colors.textSecondary }]}>
+        No issues available
+      </Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["bottom"]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>All Work</Text>
       </View>
 
-      {/* Filter Tabs */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        {filters.map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[
-              styles.filterTab,
-              { 
-                backgroundColor: selectedFilter === filter ? colors.coral : 'transparent',
-                borderColor: selectedFilter === filter ? colors.coral : colors.border
-              }
-            ]}
-            onPress={() => setSelectedFilter(filter)}
-          >
-            <Text 
-              style={[
-                styles.filterText,
-                { color: selectedFilter === filter ? colors.white : colors.text }
-              ]}
-              numberOfLines={1}
-              adjustsFontSizeToFit={false}
-            >
-              {filter}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+
 
       {/* Quick Stats */}
       <View style={styles.statsContainer}>
         <View style={[styles.statCard, { backgroundColor: colors.white }]}>
           <Ionicons name="list" size={24} color={colors.coral} />
-          <Text style={[styles.statValue, { color: colors.text }]}>156</Text>
+          <Text style={[styles.statValue, { color: colors.text }]}>{issues.length}</Text>
           <Text style={[styles.statLabel, { color: colors.text }]}>Total Issues</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.white }]}>
           <Ionicons name="time" size={24} color={colors.blue} />
-          <Text style={[styles.statValue, { color: colors.text }]}>23</Text>
+          <Text style={[styles.statValue, { color: colors.text }]}>
+            {issues.filter(issue => issue.status === 'In Progress').length}
+          </Text>
           <Text style={[styles.statLabel, { color: colors.text }]}>In Progress</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.white }]}>
           <Ionicons name="checkmark-circle" size={24} color="#4ECDC4" />
-          <Text style={[styles.statValue, { color: colors.text }]}>89</Text>
+          <Text style={[styles.statValue, { color: colors.text }]}>
+            {issues.filter(issue => issue.status === 'Done').length}
+          </Text>
           <Text style={[styles.statLabel, { color: colors.text }]}>Completed</Text>
         </View>
       </View>
@@ -146,16 +128,8 @@ export default function AllWorkScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.listContainer, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderEmptyState}
       />
-
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.coral }]}
-        activeOpacity={0.8}
-        onPress={() => { /* TODO: Add new issue/task modal or action */ }}
-      >
-        <Ionicons name="add" size={28} color={colors.white} />
-      </TouchableOpacity>
 
       <IssueDetailsModal
         visible={isIssueDetailsModalVisible}
@@ -190,40 +164,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
   },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 10,
-  },
-  filterContent: {
-    paddingRight: 20,
-    alignItems: 'center',
-  },
-  filterTab: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    minWidth: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  filterText: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-    flexShrink: 0,
-    color: '#333',
-  },
+
   statsContainer: {
     flexDirection: 'row',
     padding: 20,
@@ -345,20 +286,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
-  fab: {
-    position: 'absolute',
-    right: 24,
-    bottom: 32,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
+  emptyState: {
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 6,
-    zIndex: 10,
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 40,
   },
 }); 

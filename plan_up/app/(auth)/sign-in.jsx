@@ -1,96 +1,70 @@
-import { useSignIn } from '@clerk/clerk-expo';
-import { Link, useRouter } from 'expo-router';
-import { Text, TextInput, TouchableOpacity, View, StyleSheet, ActivityIndicator } from 'react-native';
-import React, { useState } from 'react';
+import { View, StyleSheet, Dimensions, Text } from 'react-native';
+import React from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { GoogleSignInButton } from '../../components/GoogleSignInButton';
+import { GitHubSignInButton } from '../../components/GitHubSignInButton';
+
+const { width } = Dimensions.get('window');
 
 export default function SignInScreen() {
-  const { signIn, setActive, isLoaded } = useSignIn();
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const [emailAddress, setEmailAddress] = useState('');
-  const [password, setPassword] = useState('');
-
-  // Handle the submission of the sign-in form
-  const onSignInPress = async () => {
-    if (!isLoaded || isLoading) return;
-    
-    setIsLoading(true);
-    try {
-      const signInAttempt = await signIn.create({
-        identifier: emailAddress,
-        password,
-      });
-      if (signInAttempt.status === 'complete') {
-        await setActive({ session: signInAttempt.createdSessionId });
-        // Small delay to ensure session is properly set
-        setTimeout(() => {
-          router.replace('/');
-        }, 100);
-      } else {
-        console.error(JSON.stringify(signInAttempt, null, 2));
-      }
-    } catch (err) {
-      console.error(JSON.stringify(err, null, 2));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sign in</Text>
-      <TextInput
-        autoCapitalize="none"
-        value={emailAddress}
-        placeholder="Enter email"
-        onChangeText={setEmailAddress}
-        style={styles.input}
-        editable={!isLoading}
-      />
-      <TextInput
-        value={password}
-        placeholder="Enter password"
-        secureTextEntry={true}
-        onChangeText={setPassword}
-        style={styles.input}
-        editable={!isLoading}
-      />
-      <TouchableOpacity 
-        style={[styles.button, isLoading && styles.buttonDisabled]} 
-        onPress={onSignInPress}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="#fff" size="small" />
-        ) : (
-          <Text style={styles.buttonText}>Continue</Text>
-        )}
-      </TouchableOpacity>
-      <GoogleSignInButton mode="sign-in" />
-      <View style={styles.row}>
-        <Text>Don't have an account?</Text>
-        <Link href="/sign-up">
-          <Text style={styles.link}>Sign up</Text>
-        </Link>
+    <LinearGradient
+      colors={["#a18cd1", "#fbc2eb"]}
+      style={styles.background}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+    >
+      <View style={styles.centered}>
+        <View style={styles.card}>
+          <Text style={styles.headline}>Join PlanUp today for better project management</Text>
+          <Text style={styles.subheadline}>Sign in with your account</Text>
+          <GoogleSignInButton mode="sign-in" />
+          <GitHubSignInButton mode="sign-in" />
+        </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
-// Hide header for sign-in screen
 SignInScreen.options = {
   headerShown: false,
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 24 },
-  input: { width: '100%', borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, marginBottom: 12 },
-  button: { backgroundColor: '#0a7ea4', padding: 12, borderRadius: 8, width: '100%', alignItems: 'center', marginBottom: 12 },
-  buttonDisabled: { opacity: 0.7 },
-  buttonText: { color: '#fff', fontWeight: 'bold' },
-  row: { flexDirection: 'row', marginTop: 12, alignItems: 'center' },
-  link: { color: '#0a7ea4', marginLeft: 4, fontWeight: 'bold' },
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card: {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  headline: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#6C47B6',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subheadline: {
+    fontSize: 16,
+    color: '#888',
+    marginBottom: 32,
+    textAlign: 'center',
+  },
 }); 

@@ -183,11 +183,6 @@ export default function HomeScreen() {
                 <Text style={styles.authButtonText}>Sign In</Text>
               </TouchableOpacity>
             </Link>
-            <Link href="/sign-up" asChild>
-              <TouchableOpacity style={[styles.authButton, { backgroundColor: colors.coral }]}>
-                <Text style={styles.authButtonText}>Sign Up</Text>
-              </TouchableOpacity>
-            </Link>
           </View>
         </View>
       </SignedOut>

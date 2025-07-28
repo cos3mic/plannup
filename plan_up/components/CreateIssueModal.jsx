@@ -13,7 +13,7 @@ import {
     View,
 } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
-import GoogleCalendarPicker from './GoogleCalendarPicker.jsx';
+import WorkingDatePicker from './WorkingDatePicker.jsx';
 
 export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
   const colorScheme = useColorScheme();
@@ -79,8 +79,13 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
   };
 
   const handleDateSelect = (date) => {
-    setDueDate(date.toISOString().split('T')[0]);
-    setShowDatePicker(false);
+    try {
+      console.log('Date selected in CreateIssueModal:', date);
+      setDueDate(date.toISOString().split('T')[0]);
+      setShowDatePicker(false);
+    } catch (error) {
+      console.error('Error in handleDateSelect:', error);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -178,7 +183,10 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
                     borderColor: colors.border,
                   },
                 ]}
-                onPress={() => setShowDatePicker(true)}
+                onPress={() => {
+                  console.log('Opening date picker');
+                  setShowDatePicker(true);
+                }}
               >
                 <View style={styles.dateInputContent}>
                   <Ionicons name="calendar" size={20} color={colors.coral} />
@@ -248,8 +256,8 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
         </View>
       </Modal>
 
-      {/* Google Calendar Picker */}
-      <GoogleCalendarPicker
+      {/* Working Date Picker */}
+      <WorkingDatePicker
         visible={showDatePicker}
         onClose={() => setShowDatePicker(false)}
         onDateSelected={handleDateSelect}

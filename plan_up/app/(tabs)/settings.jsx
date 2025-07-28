@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useUser, useAuth, useOrganizationList } from '@clerk/clerk-expo';
@@ -49,6 +50,111 @@ export default function SettingsScreen() {
           },
         },
       ]
+    );
+  };
+
+  const handleProfileEdit = () => {
+    Alert.alert(
+      'Profile Settings',
+      'Profile editing is available through your Clerk dashboard. You can update your name, email, and profile picture there.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Open Dashboard', 
+          onPress: () => {
+            // In a real app, you'd navigate to Clerk's user profile page
+            Alert.alert('Info', 'Profile management is handled through Clerk authentication service.');
+          }
+        },
+      ]
+    );
+  };
+
+  const handleTeamMembers = () => {
+    Alert.alert(
+      'Team Members',
+      'Manage your team members and their permissions.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Manage Team', 
+          onPress: () => {
+            Alert.alert('Team Management', 'Team management features will be available in the next update.');
+          }
+        },
+      ]
+    );
+  };
+
+  const handleWorkspaceSettings = () => {
+    Alert.alert(
+      'Workspace Settings',
+      'Configure workspace preferences, themes, and integrations.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Configure', 
+          onPress: () => {
+            Alert.alert('Workspace Configuration', 'Workspace settings will be available in the next update.');
+          }
+        },
+      ]
+    );
+  };
+
+  const handleExportData = () => {
+    Alert.alert(
+      'Export Data',
+      'Export your project data, issues, and reports.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Export', 
+          onPress: () => {
+            Alert.alert('Data Export', 'Data export feature will be available in the next update.');
+          }
+        },
+      ]
+    );
+  };
+
+  const handleHelpDocumentation = () => {
+    Alert.alert(
+      'Help & Documentation',
+      'Access help guides, tutorials, and documentation.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'View Docs', 
+          onPress: () => {
+            Alert.alert('Documentation', 'Help documentation will be available in the next update.');
+          }
+        },
+      ]
+    );
+  };
+
+  const handleContactSupport = () => {
+    Alert.alert(
+      'Contact Support',
+      'Get in touch with our support team for assistance.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Contact Us', 
+          onPress: () => {
+            Alert.alert('Support Contact', 'Support contact information will be available in the next update.');
+          }
+        },
+      ]
+    );
+  };
+
+  const handleAbout = () => {
+    Alert.alert(
+      'About PlanUp',
+      'PlanUp v1.0.0\n\nA modern project management platform built with React Native and Clerk authentication.\n\nFeatures:\n• Issue tracking\n• Sprint management\n• Team collaboration\n• Real-time notifications\n• Google Calendar integration',
+      [{ text: 'OK' }]
     );
   };
 
@@ -120,19 +226,7 @@ export default function SettingsScreen() {
           icon: 'person',
           title: 'Profile',
           subtitle: 'Edit your profile information',
-          onPress: () => Alert.alert('Profile', 'Profile editing coming soon'),
-        })}
-        {renderSettingItem({
-          icon: 'shield-checkmark',
-          title: 'Security',
-          subtitle: 'Password and security settings',
-          onPress: () => Alert.alert('Security', 'Security settings coming soon'),
-        })}
-        {renderSettingItem({
-          icon: 'card',
-          title: 'Billing',
-          subtitle: 'Manage your subscription',
-          onPress: () => Alert.alert('Billing', 'Billing settings coming soon'),
+          onPress: handleProfileEdit,
         })}
       </View>
 
@@ -175,23 +269,23 @@ export default function SettingsScreen() {
           icon: 'people',
           title: 'Team Members',
           subtitle: 'Manage team access',
-          onPress: () => Alert.alert('Team Members', 'Team management coming soon'),
+          onPress: handleTeamMembers,
         })}
         {renderSettingItem({
           icon: 'settings',
           title: 'Workspace Settings',
           subtitle: 'Configure workspace preferences',
-          onPress: () => Alert.alert('Workspace Settings', 'Workspace settings coming soon'),
+          onPress: handleWorkspaceSettings,
         })}
         {renderSettingItem({
           icon: 'download',
           title: 'Export Data',
           subtitle: 'Download your data',
-          onPress: () => Alert.alert('Export Data', 'Data export coming soon'),
+          onPress: handleExportData,
         })}
       </View>
 
-      {/* Manage Organization (Jira/ClickUp style) */}
+      {/* Manage Organization */}
       <View style={[styles.section, { backgroundColor: colors.white }]}>
         {renderSectionHeader('Manage Organization')}
         {renderSettingItem({
@@ -235,19 +329,19 @@ export default function SettingsScreen() {
           icon: 'help-circle',
           title: 'Help & Documentation',
           subtitle: 'Get help and learn more',
-          onPress: () => Alert.alert('Help', 'Help documentation coming soon'),
+          onPress: handleHelpDocumentation,
         })}
         {renderSettingItem({
           icon: 'chatbubble',
           title: 'Contact Support',
           subtitle: 'Get in touch with our team',
-          onPress: () => Alert.alert('Support', 'Contact support coming soon'),
+          onPress: handleContactSupport,
         })}
         {renderSettingItem({
           icon: 'information-circle',
           title: 'About',
           subtitle: 'App version and information',
-          onPress: () => Alert.alert('About', 'PlanUp v1.0.0\nA Jira clone built with React Native'),
+          onPress: handleAbout,
         })}
       </View>
 

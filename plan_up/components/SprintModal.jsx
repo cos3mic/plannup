@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
-import GoogleCalendarPicker from './GoogleCalendarPicker.jsx';
+import WorkingDatePicker from './WorkingDatePicker.jsx';
 
 export default function SprintModal({ visible, onClose }) {
   const colorScheme = useColorScheme();
@@ -66,13 +66,23 @@ export default function SprintModal({ visible, onClose }) {
   };
 
   const handleStartDateSelect = (date) => {
-    setStartDate(date.toISOString().split('T')[0]);
-    setShowStartDatePicker(false);
+    try {
+      console.log('Start date selected:', date);
+      setStartDate(date.toISOString().split('T')[0]);
+      setShowStartDatePicker(false);
+    } catch (error) {
+      console.error('Error in handleStartDateSelect:', error);
+    }
   };
 
   const handleEndDateSelect = (date) => {
-    setEndDate(date.toISOString().split('T')[0]);
-    setShowEndDatePicker(false);
+    try {
+      console.log('End date selected:', date);
+      setEndDate(date.toISOString().split('T')[0]);
+      setShowEndDatePicker(false);
+    } catch (error) {
+      console.error('Error in handleEndDateSelect:', error);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -163,7 +173,10 @@ export default function SprintModal({ visible, onClose }) {
                     borderColor: colors.border,
                   },
                 ]}
-                onPress={() => setShowStartDatePicker(true)}
+                onPress={() => {
+                  console.log('Opening start date picker');
+                  setShowStartDatePicker(true);
+                }}
               >
                 <View style={styles.dateInputContent}>
                   <Ionicons name="calendar" size={20} color={colors.coral} />
@@ -191,7 +204,10 @@ export default function SprintModal({ visible, onClose }) {
                     borderColor: colors.border,
                   },
                 ]}
-                onPress={() => setShowEndDatePicker(true)}
+                onPress={() => {
+                  console.log('Opening end date picker');
+                  setShowEndDatePicker(true);
+                }}
               >
                 <View style={styles.dateInputContent}>
                   <Ionicons name="calendar" size={20} color={colors.coral} />
@@ -245,8 +261,8 @@ export default function SprintModal({ visible, onClose }) {
         </View>
       </Modal>
 
-      {/* Google Calendar Pickers */}
-      <GoogleCalendarPicker
+      {/* Working Date Pickers */}
+      <WorkingDatePicker
         visible={showStartDatePicker}
         onClose={() => setShowStartDatePicker(false)}
         onDateSelected={handleStartDateSelect}
@@ -254,7 +270,7 @@ export default function SprintModal({ visible, onClose }) {
         minDate={new Date()}
       />
 
-      <GoogleCalendarPicker
+      <WorkingDatePicker
         visible={showEndDatePicker}
         onClose={() => setShowEndDatePicker(false)}
         onDateSelected={handleEndDateSelect}
