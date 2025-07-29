@@ -5,25 +5,31 @@ const DEMO_IDEAS = [
     id: 'idea-1',
     title: 'Automated Sprint Retrospective',
     description: 'A feature to collect feedback and lessons learned during the sprint, not just at the end.',
-    status: 'New',
+    category: 'feature',
+    tags: ['retrospective', 'automation', 'feedback'],
+    impact: 'high',
+    status: 'submitted',
     upvotes: 3,
     comments: [
       { id: 'c1', author: 'emmajunior8166@gmail.com', text: 'Love this! Would help us improve faster.' }
     ],
-    author: 'emmajunior8166@gmail.com',
-    createdAt: Date.now() - 1000000,
-    promotedBy: [], // Add promotedBy array
+    submittedBy: 'emmajunior8166@gmail.com',
+    submittedAt: new Date(Date.now() - 1000000).toISOString(),
+    promotedBy: [],
   },
   {
     id: 'idea-2',
     title: 'Personal Focus Dashboard',
     description: 'A dashboard to help users manage their workload and avoid burnout.',
-    status: 'Discussing',
+    category: 'improvement',
+    tags: ['dashboard', 'productivity', 'wellness'],
+    impact: 'medium',
+    status: 'under-review',
     upvotes: 5,
     comments: [],
-    author: 'emmajunior8166@gmail.com',
-    createdAt: Date.now() - 500000,
-    promotedBy: [], // Add promotedBy array
+    submittedBy: 'emmajunior8166@gmail.com',
+    submittedAt: new Date(Date.now() - 500000).toISOString(),
+    promotedBy: [],
   },
 ];
 
@@ -32,17 +38,20 @@ const IdeaContext = createContext();
 export function IdeaProvider({ children, userEmail }) {
   const [ideas, setIdeas] = useState(DEMO_IDEAS);
 
-  const addIdea = (title, description) => {
+  const addIdea = (ideaData) => {
     const newIdea = {
       id: `idea-${Date.now()}`,
-      title,
-      description,
-      status: 'New',
+      title: ideaData.title,
+      description: ideaData.description,
+      category: ideaData.category || 'feature',
+      tags: ideaData.tags || [],
+      impact: ideaData.impact || 'medium',
+      status: ideaData.status || 'submitted',
       upvotes: 0,
       comments: [],
-      author: userEmail,
-      createdAt: Date.now(),
-      promotedBy: [], // Add promotedBy to new ideas
+      submittedBy: ideaData.submittedBy || userEmail,
+      submittedAt: ideaData.submittedAt || new Date().toISOString(),
+      promotedBy: [],
     };
     setIdeas(prev => [newIdea, ...prev]);
   };
@@ -102,24 +111,27 @@ export function IdeaProvider({ children, userEmail }) {
     }));
   };
 
-  const value = {
-    ideas,
-    addIdea,
-    upvoteIdea,
-    addComment,
-    updateIdeaStatus,
-    // promoteIdea, // Remove old promote
-    togglePromoteIdea,
-    updateComment,
-  };
-
   return (
-    <IdeaContext.Provider value={value}>
+    <IdeaContext.Provider value={{
+      ideas,
+      addIdea,
+      upvoteIdea,
+      addComment,
+      updateIdeaStatus,
+      promoteIdea,
+      togglePromoteIdea,
+      updateComment,
+      userEmail,
+    }}>
       {children}
     </IdeaContext.Provider>
   );
 }
 
 export function useIdeas() {
-  return useContext(IdeaContext);
+  const context = useContext(IdeaContext);
+  if (!context) {
+    throw new Error('useIdeas must be used within an IdeaProvider');
+  }
+  return context;
 } 

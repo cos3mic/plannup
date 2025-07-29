@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, useColorScheme, View, Modal, ScrollView, TextInput } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, Modal, ScrollView, TextInput } from 'react-native';
 import CreateProjectModal from '../../components/CreateProjectModal';
 import BacklogModal from '../../components/BacklogModal';
 import { useSprints } from '../../hooks/useSprints';
@@ -8,6 +8,7 @@ import { useIssues } from '../../hooks/useIssues';
 import { Colors } from '../../constants/Colors.jsx';
 import { useOrganizationCustom } from '../../components/OrganizationContext';
 import { useUser } from '@clerk/clerk-expo';
+import { useTheme } from '../../hooks/useTheme';
 
 const initialProjectData = [
   {
@@ -49,8 +50,8 @@ const initialProjectData = [
 ];
 
 export default function ProjectScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const [isCreateProjectModalVisible, setIsCreateProjectModalVisible] = useState(false);
   const [isBacklogModalVisible, setIsBacklogModalVisible] = useState(false);
   const [projects, setProjects] = useState(initialProjectData);
@@ -184,36 +185,41 @@ export default function ProjectScreen() {
       {/* Project Details Modal */}
       <Modal visible={!!selectedProject} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: '80%' }]}> 
+          <View style={[styles.modalContent, { backgroundColor: colors.white, maxHeight: '80%' }]}> 
             <ScrollView>
               {selectedProject ? (
                 <>
-                  <Text style={styles.modalTitle}>{selectedProject.name}</Text>
-                  <Text style={styles.ideaDesc}>Key: {selectedProject.key}</Text>
-                  <Text style={styles.ideaStatus}>Progress: {selectedProject.progress}%</Text>
-                  <Text style={styles.sectionTitle}>Context & Decision Log</Text>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>{selectedProject.name}</Text>
+                  <Text style={[styles.ideaDesc, { color: colors.textSecondary }]}>Key: {selectedProject.key}</Text>
+                  <Text style={[styles.ideaStatus, { color: colors.blue }]}>Progress: {selectedProject.progress}%</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Context & Decision Log</Text>
                   {selectedProject.decisionLog.length ? (
                     selectedProject.decisionLog.map(entry => (
-                      <View key={entry.id} style={{ marginBottom: 8 }}>
-                        <Text style={{ fontWeight: 'bold' }}>{entry.author}:</Text>
-                        <Text>{entry.content}</Text>
-                        <Text style={{ fontSize: 12, color: '#888' }}>{new Date(entry.createdAt).toLocaleString()}</Text>
+                      <View key={entry.id} style={[styles.decisionLogEntry, { backgroundColor: colors.background }]}>
+                        <Text style={[styles.decisionLogAuthor, { color: colors.text }]}>{entry.author}:</Text>
+                        <Text style={[styles.decisionLogContent, { color: colors.text }]}>{entry.content}</Text>
+                        <Text style={[styles.decisionLogTime, { color: colors.textSecondary }]}>{new Date(entry.createdAt).toLocaleString()}</Text>
                       </View>
                     ))
                   ) : (
-                    <Text style={{ color: '#aaa', fontStyle: 'italic', marginBottom: 8 }}>No context or decisions yet.</Text>
+                    <Text style={[styles.noDecisionLog, { color: colors.textSecondary }]}>No context or decisions yet.</Text>
                   )}
                   <TextInput
                     placeholder="Add context, rationale, or decision..."
+                    placeholderTextColor={colors.textSecondary}
                     value={decisionLogEntry}
                     onChangeText={setDecisionLogEntry}
-                    style={styles.input}
+                    style={[styles.input, { 
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.text 
+                    }]}
                   />
-                  {decisionLogError ? <Text style={{ color: 'red' }}>{decisionLogError}</Text> : null}
-                  <TouchableOpacity onPress={() => handleAddDecisionLog(selectedProject.id)} style={styles.submitBtn}>
+                  {decisionLogError ? <Text style={[styles.errorText, { color: colors.error }]}>{decisionLogError}</Text> : null}
+                  <TouchableOpacity onPress={() => handleAddDecisionLog(selectedProject.id)} style={[styles.submitBtn, { backgroundColor: colors.blue }]}>
                     <Text style={styles.submitText}>Add Entry</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setSelectedProjectId(null)} style={styles.cancelBtn}>
+                  <TouchableOpacity onPress={() => setSelectedProjectId(null)} style={[styles.cancelBtn, { backgroundColor: colors.textSecondary }]}>
                     <Text style={styles.cancelText}>Close</Text>
                   </TouchableOpacity>
                 </>
@@ -234,8 +240,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 40,
+    padding: 10, // Reduced from 20
+    paddingTop: 20, // Reduced from 40
   },
   headerButtons: {
     flexDirection: 'row',
@@ -267,7 +273,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContainer: {
-    padding: 20,
+    padding: 10, // Reduced from 20
   },
   projectCard: {
     borderRadius: 12,
@@ -366,12 +372,10 @@ const styles = StyleSheet.create({
   },
   ideaDesc: {
     fontSize: 16,
-    color: '#555',
     marginBottom: 10,
   },
   ideaStatus: {
     fontSize: 16,
-    color: '#007bff',
     marginBottom: 15,
   },
   sectionTitle: {
@@ -381,14 +385,12 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 8,
     padding: 10,
     marginBottom: 15,
     fontSize: 16,
   },
   submitBtn: {
-    backgroundColor: '#007bff',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -401,7 +403,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   cancelBtn: {
-    backgroundColor: '#6c757d',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -411,5 +412,32 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  decisionLogEntry: {
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  decisionLogAuthor: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  decisionLogContent: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  decisionLogTime: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  noDecisionLog: {
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  errorText: {
+    marginTop: 5,
+    fontSize: 12,
   },
 }); 

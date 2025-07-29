@@ -2,17 +2,16 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors.jsx';
 import { useColorScheme } from 'react-native';
-import { Animated, View } from 'react-native';
+import { Animated, View, Text } from 'react-native';
 import { useRef, useEffect } from 'react';
 import UserAvatar from '../../components/UserAvatar';
-import IdeasScreen from './ideas.jsx'; // (to be created)
 
 function TabBarIcon({ name, color, focused, size = 24 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.spring(scaleAnim, {
-      toValue: focused ? 1.2 : 1,
+      toValue: focused ? 1.25 : 1,
       useNativeDriver: true,
       tension: 100,
       friction: 8,
@@ -21,8 +20,33 @@ function TabBarIcon({ name, color, focused, size = 24 }) {
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <Ionicons name={name} size={size} color={color} />
+      <Ionicons name={name} size={focused ? size + 6 : size} color={color} />
     </Animated.View>
+  );
+}
+
+function TabBarLabel({ label, color, focused }) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    Animated.spring(scaleAnim, {
+      toValue: focused ? 1.15 : 1,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 8,
+    }).start();
+  }, [focused]);
+  return (
+    <Animated.Text
+      style={{
+        color: focused ? Colors.light.coral : color,
+        fontWeight: focused ? 'bold' : '600',
+        fontSize: focused ? 15 : 12,
+        transform: [{ scale: scaleAnim }],
+        marginBottom: 2,
+      }}
+    >
+      {label}
+    </Animated.Text>
   );
 }
 
@@ -32,7 +56,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      screenOptions={{
+      screenOptions={({ route }) => ({
         tabBarActiveTintColor: colors.coral,
         tabBarInactiveTintColor: colors.icon,
         tabBarStyle: {
@@ -51,47 +75,19 @@ export default function TabLayout() {
           fontWeight: 'bold',
         },
         headerRight: () => <UserAvatar />,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="home" color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="project"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="folder" color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="grid" color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="allwork"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="list" color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="ideas"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="bulb" color={color} focused={focused} />
-          ),
-        }}
-      />
-    </Tabs>
+        tabBarIcon: ({ color, focused }) => {
+          let iconName;
+          if (route.name === 'index') iconName = 'home';
+          else if (route.name === 'project') iconName = 'folder';
+          else if (route.name === 'dashboard') iconName = 'grid';
+          else if (route.name === 'allwork') iconName = 'list';
+          else if (route.name === 'ideas') iconName = 'bulb';
+          return <TabBarIcon name={iconName} color={color} focused={focused} size={24} />;
+        },
+        tabBarLabel: ({ color, focused }) => (
+          <TabBarLabel label={route.name.charAt(0).toUpperCase() + route.name.slice(1)} color={color} focused={focused} />
+        ),
+      })}
+    />
   );
 }

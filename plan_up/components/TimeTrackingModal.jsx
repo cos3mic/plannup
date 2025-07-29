@@ -10,10 +10,10 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
+import { useTheme } from '../hooks/useTheme';
 
 const timeCategories = [
   { key: 'development', label: 'Development', icon: 'code', color: '#4CAF50' },
@@ -35,8 +35,8 @@ export default function TimeTrackingModal({
   onDeleteTimeLog,
   onUpdateEstimate
 }) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   
   const [activeTab, setActiveTab] = useState('log');
   const [hours, setHours] = useState('');

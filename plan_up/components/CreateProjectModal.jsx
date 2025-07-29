@@ -9,10 +9,10 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    useColorScheme,
     View,
 } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
+import { useTheme } from '../hooks/useTheme';
 
 const projectTemplates = [
   {
@@ -53,7 +53,7 @@ const projectTemplates = [
 ];
 
 const projectLeads = [
-  { id: '1', name: 'John Doe', email: 'john@company.com', avatar: 'JD' },
+  { id: '1', name: 'Franklin George', email: 'franklin@company.com', avatar: 'FG' },
   { id: '2', name: 'Jane Smith', email: 'jane@company.com', avatar: 'JS' },
   { id: '3', name: 'Mike Johnson', email: 'mike@company.com', avatar: 'MJ' },
   { id: '4', name: 'Sarah Wilson', email: 'sarah@company.com', avatar: 'SW' },
@@ -65,8 +65,8 @@ const projectLeads = [
 ];
 
 export default function CreateProjectModal({ visible, onClose, onProjectCreated }) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   
   const [projectName, setProjectName] = useState('');
   const [projectKey, setProjectKey] = useState('');
@@ -111,7 +111,7 @@ export default function CreateProjectModal({ visible, onClose, onProjectCreated 
     setIsLoading(true);
     
     try {
-      // Simulate API call
+      
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Create new project object

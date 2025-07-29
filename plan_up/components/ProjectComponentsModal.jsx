@@ -22,7 +22,7 @@ const defaultComponents = [
     description: 'User interface and client-side functionality',
     icon: 'phone-portrait',
     color: '#4ECDC4',
-    lead: 'John Doe',
+    lead: 'Franklin George',
     issueCount: 12,
   },
   {

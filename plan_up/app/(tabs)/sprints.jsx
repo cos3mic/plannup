@@ -1,21 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import SprintModal from '../../components/SprintModal';
 import { useSprints } from '../../hooks/useSprints';
 import { useIssues } from '../../hooks/useIssues';
 import { Colors } from '../../constants/Colors.jsx';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function SprintsScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const [isSprintModalVisible, setIsSprintModalVisible] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState(null);
   const { sprints, addSprint, updateSprint, deleteSprint } = useSprints();
   const { issues } = useIssues();
 
   const teamMembers = [
-    'John Doe',
+    'Franklin George',
     'Alice Smith',
     'Mike Johnson',
     'Sarah Wilson',

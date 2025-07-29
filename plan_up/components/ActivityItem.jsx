@@ -1,24 +1,19 @@
-import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  Alert,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
   View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
   Modal,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors.jsx';
+import { useTheme } from '../hooks/useTheme';
 
-export default function ActivityItem({ 
-  activity, 
-  onDelete, 
-  onUpdate,
-  onPress 
-}) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+export default function ActivityItem({ activity, onDelete, onUpdate }) {
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const [showActions, setShowActions] = useState(false);
 
   const formatTimeAgo = (timestamp) => {

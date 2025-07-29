@@ -62,7 +62,7 @@ const bulkOperations = [
 
 const statusOptions = ['To Do', 'In Progress', 'Done'];
 const priorityOptions = ['High', 'Medium', 'Low'];
-const assigneeOptions = ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Wilson', 'Unassigned'];
+const assigneeOptions = ['Franklin George', 'Jane Smith', 'Mike Johnson', 'Sarah Wilson', 'Unassigned'];
 
 export default function BulkOperationsModal({ 
   visible, 

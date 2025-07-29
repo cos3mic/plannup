@@ -14,7 +14,7 @@ export default function NotificationTestButton() {
       const result = await PushNotificationService.sendInviteNotification(
         'test@example.com',
         'Test Organization',
-        'John Doe'
+        'Franklin George'
       );
       
       if (result.success) {

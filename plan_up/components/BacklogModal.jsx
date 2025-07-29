@@ -10,10 +10,11 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    useColorScheme,
     View,
+    SafeAreaView,
 } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
+import { useTheme } from '../hooks/useTheme';
 
 export default function BacklogModal({ 
   visible, 
@@ -23,8 +24,8 @@ export default function BacklogModal({
   onUpdateIssue,
   onAddToSprint,
 }) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,7 +47,7 @@ export default function BacklogModal({
   };
 
   const statusColors = {
-    'To Do': '#E5E5E5',
+    'To Do': colorScheme === 'dark' ? '#30363D' : '#E5E5E5',
     'In Progress': '#FF6B6B',
     'Done': '#4ECDC4',
   };
@@ -103,6 +104,7 @@ export default function BacklogModal({
             });
             setSelectedIssues([]);
             setSelectedSprint(null);
+            onClose();
           }
         },
       ]
@@ -118,22 +120,22 @@ export default function BacklogModal({
   };
 
   const renderIssueItem = ({ item }) => (
-    <TouchableOpacity
+    <TouchableOpacity 
       style={[
-        styles.issueItem,
-        {
-          backgroundColor: selectedIssues.includes(item.id) ? colors.coral + '20' : colors.white,
-          borderColor: colors.border,
-        },
+        styles.issueItem, 
+        { 
+          backgroundColor: colors.white,
+          borderColor: selectedIssues.includes(item.id) ? colors.blue : colors.border 
+        }
       ]}
       onPress={() => handleIssueSelection(item.id)}
     >
       <View style={styles.issueHeader}>
-        <View style={styles.issueInfo}>
-          <Text style={[styles.issueKey, { color: colors.text }]}>{item.key}</Text>
+        <View style={styles.issueType}>
           <View style={[styles.typeBadge, { backgroundColor: typeColors[item.type] }]}>
             <Text style={styles.typeText}>{item.type}</Text>
           </View>
+          <Text style={[styles.issueKey, { color: colors.text }]}>{item.key}</Text>
         </View>
         <View style={[styles.priorityBadge, { backgroundColor: priorityColors[item.priority] + '20' }]}>
           <Text style={[styles.priorityText, { color: priorityColors[item.priority] }]}>
@@ -142,9 +144,7 @@ export default function BacklogModal({
         </View>
       </View>
 
-      <Text style={[styles.issueTitle, { color: colors.text }]} numberOfLines={2}>
-        {item.title}
-      </Text>
+      <Text style={[styles.issueTitle, { color: colors.text }]}>{item.title}</Text>
 
       <View style={styles.issueFooter}>
         <View style={styles.assigneeInfo}>
@@ -156,166 +156,126 @@ export default function BacklogModal({
           <Text style={[styles.assigneeName, { color: colors.text }]}>{item.assignee}</Text>
         </View>
 
-        <View style={styles.issueMeta}>
-          <Text style={[styles.storyPoints, { color: colors.coral }]}>
-            {item.storyPoints || 0} pts
-          </Text>
-          <Text style={[styles.issueDate, { color: colors.textSecondary }]}>
-            {new Date(item.created).toLocaleDateString()}
-          </Text>
+        <View style={[styles.statusBadge, { backgroundColor: statusColors[item.status] }]}>
+          <Text style={[styles.statusText, { color: colors.text }]}>{item.status}</Text>
         </View>
       </View>
-
-      {selectedIssues.includes(item.id) && (
-        <View style={styles.selectionOverlay}>
-          <Ionicons name="checkmark-circle" size={20} color={colors.coral} />
-        </View>
-      )}
     </TouchableOpacity>
   );
 
   const renderSprintItem = ({ item }) => (
-    <TouchableOpacity
+    <TouchableOpacity 
       style={[
-        styles.sprintItem,
-        {
-          backgroundColor: selectedSprint?.id === item.id ? colors.coral : colors.white,
-          borderColor: colors.border,
-        },
+        styles.sprintItem, 
+        { 
+          backgroundColor: selectedSprint?.id === item.id ? colors.blue : colors.white,
+          borderColor: colors.border 
+        }
       ]}
       onPress={() => setSelectedSprint(item)}
     >
-      <Text style={[
-        styles.sprintName, 
-        { color: selectedSprint?.id === item.id ? '#fff' : colors.text }
-      ]}>
+      <Text style={[styles.sprintName, { color: selectedSprint?.id === item.id ? colors.white : colors.text }]}>
         {item.name}
       </Text>
-      <Text style={[
-        styles.sprintStatus, 
-        { color: selectedSprint?.id === item.id ? '#fff' : colors.textSecondary }
-      ]}>
-        {item.status}
+      <Text style={[styles.sprintDates, { color: selectedSprint?.id === item.id ? colors.white : colors.textSecondary }]}>
+        {new Date(item.startDate).toLocaleDateString()} - {new Date(item.endDate).toLocaleDateString()}
       </Text>
     </TouchableOpacity>
   );
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View style={[styles.container, { backgroundColor: colors.background + 'F2' }]}> {/* Subtle modal background */}
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.white, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 }]}> 
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Backlog</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={28} color={colors.text} />
+            <Ionicons name="close" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
-        {/* Search */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBarWrapper}>
-            <Ionicons name="search" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
-          <TextInput
-            style={[
-              styles.searchInput,
-              {
-                backgroundColor: colors.white,
-                borderColor: colors.border,
-                color: colors.text,
-              },
-            ]}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search issues..."
-            placeholderTextColor={colors.textSecondary}
-          />
+        <View style={styles.content}>
+          {/* Search */}
+          <View style={[styles.searchContainer, { backgroundColor: colors.white }]}>
+            <Ionicons name="search" size={20} color={colors.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="Search issues..."
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
           </View>
-        </View>
 
-        {/* Filters */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterContainer}
-          contentContainerStyle={styles.filterContent}
-        >
-          {filters.map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterTab,
-                { 
-                  backgroundColor: selectedFilter === filter ? colors.coral : colors.background,
-                  borderColor: selectedFilter === filter ? colors.coral : colors.border,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  shadowColor: selectedFilter === filter ? colors.coral : 'transparent',
-                  shadowOpacity: selectedFilter === filter ? 0.12 : 0,
-                  shadowRadius: selectedFilter === filter ? 4 : 0,
-                  elevation: selectedFilter === filter ? 2 : 0,
-                }
-              ]}
-              onPress={() => setSelectedFilter(filter)}
-            >
-              {/* Add icons for each filter */}
-              {filter === 'Bugs' && <Ionicons name="bug" size={14} color={selectedFilter === filter ? colors.white : colors.textSecondary} style={{ marginRight: 4 }} />}
-              {filter === 'Stories' && <Ionicons name="book" size={14} color={selectedFilter === filter ? colors.white : colors.textSecondary} style={{ marginRight: 4 }} />}
-              {filter === 'Tasks' && <Ionicons name="checkmark-done" size={14} color={selectedFilter === filter ? colors.white : colors.textSecondary} style={{ marginRight: 4 }} />}
-              {filter === 'Unassigned' && <Ionicons name="person" size={14} color={selectedFilter === filter ? colors.white : colors.textSecondary} style={{ marginRight: 4 }} />}
-              <Text 
+          {/* Filters */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersContainer}>
+            {filters.map(filter => (
+              <TouchableOpacity
+                key={filter}
                 style={[
+                  styles.filterButton,
+                  {
+                    backgroundColor: selectedFilter === filter ? colors.blue : colors.white,
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => setSelectedFilter(filter)}
+              >
+                <Text style={[
                   styles.filterText,
                   { color: selectedFilter === filter ? colors.white : colors.text }
-                ]}
-              >
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+                ]}>
+                  {filter}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Issues List */}
+          <View style={styles.issuesSection}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Issues ({filteredIssues.length})
+            </Text>
+            <FlatList
+              data={filteredIssues}
+              renderItem={renderIssueItem}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              style={styles.issuesList}
+            />
+          </View>
 
           {/* Sprint Selection */}
           <View style={styles.sprintSection}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Add to Sprint</Text>
             <FlatList
-              data={sprints.filter(s => s.status === 'planned' || s.status === 'active')}
+              data={sprints.filter(s => s.status === 'planned')}
               renderItem={renderSprintItem}
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.sprintList}
+              style={styles.sprintList}
             />
           </View>
 
-        {/* Issues List (scrollable) */}
-          <View style={styles.issuesSection}>
-            <View style={styles.issuesHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Issues ({filteredIssues.length})</Text>
-              {selectedIssues.length > 0 && (
-                <TouchableOpacity
-                style={[styles.addToSprintButton, { backgroundColor: colors.coral, flexDirection: 'row', alignItems: 'center', gap: 4 }]}
-                  onPress={handleAddToSprint}
-                >
-                <Ionicons name="arrow-forward-circle" size={18} color="#fff" />
-                  <Text style={styles.addToSprintText}>Add to Sprint</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            <FlatList
-              data={filteredIssues}
-              renderItem={renderIssueItem}
-              keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={true}
-              contentContainerStyle={styles.issuesList}
-            style={{ flexGrow: 1 }}
-            />
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[
+                styles.addToSprintButton,
+                { 
+                  backgroundColor: selectedIssues.length > 0 && selectedSprint ? colors.blue : colors.textSecondary 
+                }
+              ]}
+              onPress={handleAddToSprint}
+              disabled={selectedIssues.length === 0 || !selectedSprint}
+            >
+              <Text style={styles.addToSprintText}>
+                Add {selectedIssues.length} Issue{selectedIssues.length !== 1 ? 's' : ''} to Sprint
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -353,11 +313,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.04)',
   },
   searchContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  searchBarWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
@@ -365,7 +320,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#eee',
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 8,
+    marginHorizontal: 24,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOpacity: 0.04,
     shadowRadius: 2,
@@ -374,20 +331,16 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    paddingVertical: 8,
+    paddingVertical: 0,
     backgroundColor: 'transparent',
     borderWidth: 0,
   },
-  filterContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+  filtersContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 12,
+    marginBottom: 12,
   },
-  filterContent: {
-    gap: 8,
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  filterTab: {
+  filterButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -420,7 +373,6 @@ const styles = StyleSheet.create({
   },
   sprintList: {
     gap: 12,
-    alignItems: 'center',
   },
   sprintItem: {
     paddingHorizontal: 18,
@@ -441,9 +393,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 2,
   },
-  sprintStatus: {
+  sprintDates: {
     fontSize: 12,
-    fontWeight: '500',
     opacity: 0.7,
   },
   issuesSection: {
@@ -451,27 +402,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 18,
     paddingBottom: 0,
-  },
-  issuesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  addToSprintButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-    flexDirection: 'row',
-    gap: 4,
-  },
-  addToSprintText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
   },
   issuesList: {
     gap: 16,
@@ -496,14 +426,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  issueInfo: {
+  issueType: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   issueKey: {
     fontSize: 13,
     fontWeight: '700',
-    marginRight: 8,
+    marginLeft: 8,
     color: '#888',
   },
   typeBadge: {
@@ -564,22 +494,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#444',
   },
-  issueMeta: {
-    alignItems: 'flex-end',
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginLeft: 8,
   },
-  storyPoints: {
-    fontSize: 13,
+  statusText: {
+    fontSize: 12,
     fontWeight: '700',
-    marginBottom: 2,
-    color: '#FFB300',
   },
-  issueDate: {
-    fontSize: 11,
-    color: '#888',
+  actionButtons: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
   },
-  selectionOverlay: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
+  addToSprintButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  addToSprintText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
 }); 

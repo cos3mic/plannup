@@ -1,30 +1,50 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
-import WorkingDatePicker from './WorkingDatePicker.jsx';
+import * as Calendar from 'expo-calendar';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { useTheme } from '../hooks/useTheme';
+
+async function createCalendarEvent(title, description, dueDate) {
+  if (!dueDate) return;
+  const { status } = await Calendar.requestCalendarPermissionsAsync();
+  if (status !== 'granted') return;
+
+  const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+  const defaultCalendar = calendars.find(cal => cal.allowsModifications) || calendars[0];
+  if (!defaultCalendar) return;
+
+  await Calendar.createEventAsync(defaultCalendar.id, {
+    title,
+    notes: description,
+    startDate: new Date(dueDate),
+    endDate: new Date(new Date(dueDate).getTime() + 60 * 60 * 1000),
+    timeZone: undefined,
+  });
+}
 
 export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
   const [dueDate, setDueDate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+
+  if (!visible) return null;
 
   const priorities = [
     { key: 'low', label: 'Low', color: '#4CAF50' },
@@ -39,13 +59,10 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
     }
 
     setIsLoading(true);
-    
+
     try {
-      // Here you would integrate with Jira/ClickUp APIs
-      // For now, we'll simulate the API call
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Create activity for the new issue
+
       const activity = {
         type: 'issue_created',
         title: `New issue "${title}" created`,
@@ -53,16 +70,14 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
         icon: 'create',
         color: '#FF6B6B',
       };
-      
-      if (onIssueCreated) {
-        onIssueCreated(activity);
+
+      if (onIssueCreated) onIssueCreated(activity);
+
+      if (dueDate) {
+        await createCalendarEvent(title, description, dueDate);
       }
-      
-      Alert.alert(
-        'Success',
-        'Issue created successfully!',
-        [{ text: 'OK', onPress: handleClose }]
-      );
+
+      Alert.alert('Success', 'Issue created successfully!', [{ text: 'OK', onPress: handleClose }]);
     } catch (error) {
       Alert.alert('Error', 'Failed to create issue. Please try again.');
     } finally {
@@ -78,14 +93,11 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
     onClose();
   };
 
-  const handleDateSelect = (date) => {
-    try {
-      console.log('Date selected in CreateIssueModal:', date);
-      setDueDate(date.toISOString().split('T')[0]);
-      setShowDatePicker(false);
-    } catch (error) {
-      console.error('Error in handleDateSelect:', error);
-    }
+  const showDatePicker = () => setDatePickerVisibility(true);
+  const hideDatePicker = () => setDatePickerVisibility(false);
+  const handleDateConfirm = (date) => {
+    setDueDate(date.toISOString().split('T')[0]);
+    hideDatePicker();
   };
 
   const formatDate = (dateString) => {
@@ -100,29 +112,18 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
   };
 
   return (
-    <>
-      <Modal
-        visible={visible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={handleClose}
-      >
+    <View style={styles.overlay}>
         <View style={[styles.container, { backgroundColor: colors.background }]}>
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>
-              Create New Issue
-            </Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Create New Issue</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.content}>
-            {/* Issue Title */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Issue Title *
-              </Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Issue Title *</Text>
               <TextInput
                 style={[
                   styles.input,
@@ -139,11 +140,8 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
               />
             </View>
 
-            {/* Priority Selection */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Priority
-              </Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Priority</Text>
               <View style={styles.priorityContainer}>
                 {priorities.map((p) => (
                   <TouchableOpacity
@@ -157,12 +155,7 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
                     ]}
                     onPress={() => setPriority(p.key)}
                   >
-                    <Text
-                      style={[
-                        styles.priorityText,
-                        { color: priority === p.key ? '#fff' : colors.text },
-                      ]}
-                    >
+                    <Text style={[styles.priorityText, { color: priority === p.key ? '#fff' : colors.text }]}>
                       {p.label}
                     </Text>
                   </TouchableOpacity>
@@ -170,11 +163,8 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
               </View>
             </View>
 
-            {/* Due Date */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Due Date
-              </Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Due Date</Text>
               <TouchableOpacity
                 style={[
                   styles.dateInput,
@@ -183,17 +173,11 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
                     borderColor: colors.border,
                   },
                 ]}
-                onPress={() => {
-                  console.log('Opening date picker');
-                  setShowDatePicker(true);
-                }}
+              onPress={showDatePicker}
               >
                 <View style={styles.dateInputContent}>
                   <Ionicons name="calendar" size={20} color={colors.coral} />
-                  <Text style={[
-                    styles.dateInputText,
-                    { color: dueDate ? colors.text : colors.textSecondary }
-                  ]}>
+                  <Text style={[styles.dateInputText, { color: dueDate ? colors.text : colors.textSecondary }]}>
                     {dueDate ? formatDate(dueDate) : 'Select due date (optional)'}
                   </Text>
                 </View>
@@ -201,11 +185,8 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
               </TouchableOpacity>
             </View>
 
-            {/* Description */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Description
-              </Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Description</Text>
               <TextInput
                 style={[
                   styles.textArea,
@@ -227,15 +208,10 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
           </ScrollView>
 
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
-            <TouchableOpacity
-              style={[styles.cancelButton, { borderColor: colors.border }]}
-              onPress={handleClose}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.text }]}>
-                Cancel
-              </Text>
+            <TouchableOpacity style={[styles.cancelButton, { borderColor: colors.border }]} onPress={handleClose}>
+              <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[
                 styles.createButton,
@@ -254,24 +230,29 @@ export default function CreateIssueModal({ visible, onClose, onIssueCreated }) {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
-
-      {/* Working Date Picker */}
-      <WorkingDatePicker
-        visible={showDatePicker}
-        onClose={() => setShowDatePicker(false)}
-        onDateSelected={handleDateSelect}
-        title="Select Due Date"
-        minDate={new Date()}
-      />
-    </>
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+          mode="date"
+        onConfirm={handleDateConfirm}
+        onCancel={hideDatePicker}
+          minimumDate={new Date()}
+        />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    zIndex: 100,
+    // Remove justifyContent/alignItems so child fills screen
   },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -280,25 +261,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
+  headerTitle: { fontSize: 20, fontWeight: '600' },
+  closeButton: { padding: 4 },
+  content: { flex: 1, padding: 20 },
+  section: { marginBottom: 24 },
+  sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 12 },
   input: {
     borderWidth: 1,
     borderRadius: 8,
@@ -376,4 +343,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#fff',
   },
-}); 
+});

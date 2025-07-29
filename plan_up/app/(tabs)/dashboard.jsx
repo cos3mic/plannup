@@ -1,18 +1,23 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, TextInput, FlatList } from 'react-native';
 import { useState } from 'react';
 import { Colors } from '../../constants/Colors.jsx';
-import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ReportsModal from '../../components/ReportsModal';
 import { useIssues } from '../../hooks/useIssues';
 import { useSprints } from '../../hooks/useSprints';
 import { useUser } from '@clerk/clerk-expo';
 import { RetrospectiveProvider, useRetrospective } from '../../components/RetrospectiveContext';
+import { useRouter } from 'expo-router';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function DashboardScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const [isReportsModalVisible, setIsReportsModalVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const router = useRouter();
   
   const { issues } = useIssues();
   const { sprints } = useSprints();
@@ -20,23 +25,26 @@ export default function DashboardScreen() {
   const userName = user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress || 'anonymous';
 
   const metrics = [
-    { title: 'Total Issues', value: '156', icon: 'list', color: colors.coral },
-    { title: 'In Progress', value: '23', icon: 'time', color: colors.blue },
-    { title: 'Completed', value: '89', icon: 'checkmark-circle', color: '#4ECDC4' },
-    { title: 'Overdue', value: '5', icon: 'warning', color: '#FF6B6B' },
+    { title: 'Total Issues', value: '156', icon: 'list', color: colors.blue, change: '+12%' },
+    { title: 'In Progress', value: '23', icon: 'time', color: colors.blueAccent, change: '+5%' },
+    { title: 'Completed', value: '89', icon: 'checkmark-circle', color: colors.success, change: '+18%' },
+    { title: 'Overdue', value: '5', icon: 'warning', color: colors.error, change: '-2%' },
   ];
 
-  const recentSprints = [
-    { name: 'Sprint 23', progress: 85, daysLeft: 3 },
-    { name: 'Sprint 22', progress: 100, daysLeft: 0 },
-    { name: 'Sprint 21', progress: 92, daysLeft: 0 },
+  const filters = [
+    { key: 'all', label: 'All', icon: 'grid' },
+    { key: 'recent', label: 'Recent', icon: 'time' },
+    { key: 'priority', label: 'Priority', icon: 'flag' },
+    { key: 'status', label: 'Status', icon: 'list' },
   ];
+
+  const recentSprints = sprints.slice(0, 3);
 
   const teamAnalytics = [
     {
-      name: 'John Doe',
-      avatar: 'JD',
-      color: colors.coral,
+      name: 'Franklin George',
+      avatar: 'FG',
+      color: colors.blue,
       issuesCompleted: 12,
       issuesInProgress: 3,
       productivity: 85,
@@ -45,7 +53,7 @@ export default function DashboardScreen() {
     {
       name: 'Alice Smith',
       avatar: 'AS',
-      color: colors.blue,
+      color: colors.blueAccent,
       issuesCompleted: 8,
       issuesInProgress: 2,
       productivity: 92,
@@ -54,240 +62,90 @@ export default function DashboardScreen() {
     {
       name: 'Mike Johnson',
       avatar: 'MJ',
-      color: '#4ECDC4',
+      color: colors.success,
       issuesCompleted: 15,
       issuesInProgress: 1,
       productivity: 78,
       lastActive: '30m ago'
     },
-    {
-      name: 'Sarah Wilson',
-      avatar: 'SW',
-      color: '#FFA500',
-      issuesCompleted: 6,
-      issuesInProgress: 4,
-      productivity: 65,
-      lastActive: '4h ago'
-    },
-    {
-      name: 'David Brown',
-      avatar: 'DB',
-      color: '#9C27B0',
-      issuesCompleted: 10,
-      issuesInProgress: 2,
-      productivity: 88,
-      lastActive: '45m ago'
-    },
-    {
-      name: 'Jane Smith',
-      avatar: 'JS',
-      color: '#607D8B',
-      issuesCompleted: 7,
-      issuesInProgress: 3,
-      productivity: 72,
-      lastActive: '1h ago'
-    },
-    {
-      name: 'Robert Chen',
-      avatar: 'RC',
-      color: '#795548',
-      issuesCompleted: 14,
-      issuesInProgress: 1,
-      productivity: 91,
-      lastActive: '15m ago'
-    },
-    {
-      name: 'Emily Davis',
-      avatar: 'ED',
-      color: '#E91E63',
-      issuesCompleted: 5,
-      issuesInProgress: 5,
-      productivity: 68,
-      lastActive: '2h ago'
-    },
-    {
-      name: 'Michael Wong',
-      avatar: 'MW',
-      color: '#3F51B5',
-      issuesCompleted: 11,
-      issuesInProgress: 2,
-      productivity: 83,
-      lastActive: '30m ago'
-    }
   ];
 
-  // Personal Focus & Burnout Prevention Section
-  const myIssues = issues.filter(issue => issue.assignee === userName);
-  const overdue = myIssues.filter(issue => new Date(issue.dueDate) < new Date() && issue.status !== 'Done');
-  const inProgress = myIssues.filter(issue => issue.status === 'In Progress');
-  const totalEstimated = myIssues.reduce((sum, i) => sum + (i.estimatedHours || 0), 0);
-  const totalLogged = myIssues.reduce((sum, i) => sum + (i.loggedHours || 0), 0);
-  const workloadLevel = myIssues.length > 7 || totalEstimated > 40 ? 'High' : myIssues.length > 3 ? 'Moderate' : 'Low';
-  const burnoutRisk = workloadLevel === 'High' || overdue.length > 2 ? 'At Risk' : 'Healthy';
-  const focusSuggestions = [];
-  if (burnoutRisk === 'At Risk') focusSuggestions.push('Consider taking a break or reprioritizing tasks.');
-  if (overdue.length > 0) focusSuggestions.push('You have overdue tasks. Address them soon.');
-  if (workloadLevel === 'High') focusSuggestions.push('Your workload is high. Try to delegate or reschedule some tasks.');
-  if (workloadLevel === 'Low') focusSuggestions.push('Great job! Your workload is manageable.');
+  // Filter issues based on search query and active filter
+  const filteredIssues = issues.filter(issue => {
+    const matchesSearch = searchQuery === '' || 
+      issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      issue.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    switch (activeFilter) {
+      case 'recent':
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        return new Date(issue.createdAt || Date.now()) > oneWeekAgo;
+      case 'priority':
+        return issue.priority === 'high';
+      case 'status':
+        return issue.status === 'in-progress';
+      default:
+        return true;
+    }
+  });
 
-  // --- Continuous Retrospective Section ---
-  function RetrospectiveSection() {
-    const { feedback, addFeedback, resolveFeedback, unresolveFeedback } = useRetrospective();
-    const [type, setType] = useState('Went Well');
-    const [text, setText] = useState('');
-    const [error, setError] = useState('');
+  const handleViewAllSprints = () => {
+    router.push('/sprints');
+  };
 
-    const handleAdd = () => {
-      if (!text.trim()) {
-        setError('Feedback cannot be empty.');
-        return;
-      }
-      addFeedback(type, text);
-      setText('');
-      setError('');
-    };
+  const handleViewMoreResults = () => {
+    // Navigate to allwork screen with current search query
+    router.push({
+      pathname: '/allwork',
+      params: { search: searchQuery }
+    });
+  };
 
-    const feedbackTypes = ['Went Well', 'To Improve', 'Action Item'];
-    const unresolved = feedback.filter(f => !f.resolved);
-    const recent = feedback.slice(0, 5);
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+  };
 
-    return (
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Continuous Retrospective</Text>
-        <View style={[styles.focusCard, { backgroundColor: colors.white, marginBottom: 10 }]}> 
-          <Text style={{ fontWeight: 'bold', color: colors.coral, marginBottom: 4 }}>Share feedback or action items at any time:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
-            {feedbackTypes.map(ft => (
-              <TouchableOpacity
-                key={ft}
-                style={{
-                  minWidth: 100,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 12,
-                  backgroundColor: type === ft ? colors.coral : colors.background,
-                  marginRight: 8,
-                  borderWidth: 1,
-                  borderColor: colors.coral,
-                }}
-                onPress={() => setType(ft)}
-              >
-                <Text style={{ color: type === ft ? '#fff' : colors.coral, fontWeight: '600' }}>{ft}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TextInput
-              style={{ flex: 1, borderWidth: 1, borderColor: colors.coral, borderRadius: 8, padding: 8, marginRight: 8, color: colors.text }}
-              placeholder={`Add ${type.toLowerCase()}...`}
-              placeholderTextColor={colors.textSecondary}
-              value={text}
-              onChangeText={setText}
-            />
-            <TouchableOpacity onPress={handleAdd} style={{ backgroundColor: colors.coral, borderRadius: 8, padding: 10 }}>
-              <Ionicons name="add" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          {error ? <Text style={{ color: colors.coral, marginTop: 4 }}>{error}</Text> : null}
+  const handleFilterChange = (filterKey) => {
+    setActiveFilter(filterKey);
+  };
+
+  const renderMetricCard = ({ item }) => (
+    <View style={[styles.metricCard, { backgroundColor: colors.white }]}>
+      <View style={styles.metricHeader}>
+        <View style={[styles.metricIcon, { backgroundColor: item.color + '20' }]}>
+          <Ionicons name={item.icon} size={20} color={item.color} />
         </View>
-        <Text style={{ fontWeight: 'bold', color: colors.text, marginBottom: 4 }}>Recent Feedback:</Text>
-        {recent.length === 0 && <Text style={{ color: colors.textSecondary }}>No feedback yet.</Text>}
-        {recent.map(f => (
-          <View key={f.id} style={{ backgroundColor: colors.background, borderRadius: 8, padding: 8, marginBottom: 6, flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.coral, fontWeight: 'bold' }}>{f.type}</Text>
-              <Text style={{ color: colors.text }}>{f.text}</Text>
-              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>By {f.author} • {new Date(f.createdAt).toLocaleString()}</Text>
+        <Text style={[styles.metricChange, { color: item.change.startsWith('+') ? colors.success : colors.error }]}>
+          {item.change}
+        </Text>
             </View>
-            {f.type === 'Action Item' && (
-              <TouchableOpacity
-                onPress={() => f.resolved ? unresolveFeedback(f.id) : resolveFeedback(f.id)}
-                style={{ marginLeft: 8 }}
-              >
-                <Ionicons name={f.resolved ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={f.resolved ? '#4ECDC4' : colors.coral} />
-              </TouchableOpacity>
-            )}
-          </View>
-        ))}
-        {unresolved.some(f => f.type === 'Action Item') && (
-          <View style={{ marginTop: 8 }}>
-            <Text style={{ fontWeight: 'bold', color: colors.coral, marginBottom: 2 }}>Unresolved Action Items:</Text>
-            {unresolved.filter(f => f.type === 'Action Item').map(f => (
-              <Text key={f.id} style={{ color: colors.textSecondary, marginBottom: 2 }}>• {f.text}</Text>
-            ))}
-          </View>
-        )}
+      <Text style={[styles.metricValue, { color: colors.text }]}>{item.value}</Text>
+      <Text style={[styles.metricTitle, { color: colors.textSecondary }]}>{item.title}</Text>
       </View>
     );
-  }
 
-  return (
-    <RetrospectiveProvider userEmail={userName}>
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Header (now scrollable, improved alignment) */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Dashboard</Text>
-          <View style={styles.headerButtonsRow}>
-            <TouchableOpacity 
-              style={[styles.reportsButton, { borderColor: colors.coral }]}
-              onPress={() => setIsReportsModalVisible(true)}
-            >
-              <Ionicons name="analytics" size={20} color={colors.coral} />
-              <Text style={[styles.reportsButtonText, { color: colors.coral }]}>Reports</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.filterButton, { borderColor: colors.blue }]}>
-              <Ionicons name="filter" size={20} color={colors.blue} />
-              <Text style={[styles.filterText, { color: colors.blue }]}>Filter</Text>
-            </TouchableOpacity>
+  const renderSprintCard = ({ item }) => (
+    <TouchableOpacity style={[styles.sprintCard, { backgroundColor: colors.white }]}>
+      <View style={styles.sprintHeader}>
+        <Text style={[styles.sprintName, { color: colors.text }]}>{item.name}</Text>
+        <View style={[
+          styles.statusBadge, 
+          { 
+            backgroundColor: item.status === 'active' 
+              ? (colorScheme === 'dark' ? colors.blue + '30' : colors.blue + '20')
+              : (colorScheme === 'dark' ? colors.success + '30' : colors.success + '20')
+          }
+        ]}>
+          <Text style={[
+            styles.statusText, 
+            { color: item.status === 'active' ? colors.blue : colors.success }
+          ]}>
+            {item.status}
+          </Text>
           </View>
-        </View>
-
-      {/* Metrics Grid */}
-        <View style={styles.metricsGridWrapper}>
-          <View style={styles.metricsGridRow}>
-            {metrics.slice(0, 2).map((metric, index) => (
-              <View key={index} style={[styles.metricCard, { backgroundColor: colors.white, marginRight: index === 0 ? 12 : 0 }]}> 
-            <View style={styles.metricContent}>
-              <View style={[styles.metricIcon, { backgroundColor: metric.color + '20' }]}>
-                <Ionicons name={metric.icon} size={20} color={metric.color} />
-              </View>
-              <View style={styles.metricText}>
-                <Text style={[styles.metricValue, { color: colors.text }]}>{metric.value}</Text>
-                <Text style={[styles.metricTitle, { color: colors.text }]}>{metric.title}</Text>
-              </View>
-            </View>
-          </View>
-        ))}
-          </View>
-          <View style={styles.metricsGridRow}>
-            {metrics.slice(2, 4).map((metric, index) => (
-              <View key={index} style={[styles.metricCard, { backgroundColor: colors.white, marginRight: index === 0 ? 12 : 0 }]}> 
-                <View style={styles.metricContent}>
-                  <View style={[styles.metricIcon, { backgroundColor: metric.color + '20' }]}> 
-                    <Ionicons name={metric.icon} size={20} color={metric.color} />
-                  </View>
-                  <View style={styles.metricText}>
-                    <Text style={[styles.metricValue, { color: colors.text }]}>{metric.value}</Text>
-                    <Text style={[styles.metricTitle, { color: colors.text }]}>{metric.title}</Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-      </View>
-
-      {/* Sprint Progress */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Active Sprints</Text>
-        {recentSprints.map((sprint, index) => (
-            <View key={index} style={[styles.sprintCard, { backgroundColor: colors.white, marginBottom: 14 }]}> 
-            <View style={styles.sprintHeader}>
-              <Text style={[styles.sprintName, { color: colors.text }]}>{sprint.name}</Text>
-              <Text style={[styles.sprintDays, { color: colors.coral }]}>
-                {sprint.daysLeft > 0 ? `${sprint.daysLeft} days left` : 'Completed'}
-              </Text>
             </View>
             <View style={styles.progressContainer}>
               <View style={styles.progressBar}>
@@ -295,133 +153,218 @@ export default function DashboardScreen() {
                   style={[
                     styles.progressFill, 
                     { 
-                      width: `${sprint.progress}%`,
-                      backgroundColor: sprint.progress === 100 ? '#4ECDC4' : colors.coral 
+                width: `${item.velocity}%`,
+                backgroundColor: item.velocity === 100 ? colors.success : colors.blue 
                     }
                   ]} 
                 />
               </View>
-              <Text style={[styles.progressText, { color: colors.text }]}>{sprint.progress}%</Text>
-            </View>
-          </View>
-        ))}
+        <Text style={[styles.progressText, { color: colors.text }]}>{item.velocity}%</Text>
       </View>
-
-      {/* Team Analytics */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>Team Analytics</Text>
-          <TouchableOpacity style={[styles.viewAllButton, { borderColor: colors.blue }]}>
-            <Text style={[styles.viewAllText, { color: colors.blue }]}>View All</Text>
+      <Text style={[styles.sprintDays, { color: colors.textSecondary }]}>
+        {item.issues.length} issues
+      </Text>
           </TouchableOpacity>
+  );
+
+  const renderTeamMember = ({ item }) => (
+    <View style={[styles.teamCard, { backgroundColor: colors.white }]}>
+      <View style={styles.teamHeader}>
+        <View style={[styles.avatar, { backgroundColor: item.color }]}>
+          <Text style={styles.avatarText}>{item.avatar}</Text>
         </View>
-        <View style={[styles.analyticsCard, { backgroundColor: colors.white }]}>
-          {teamAnalytics.map((member, index) => (
-              <View key={index} style={[styles.analyticsItem, { marginBottom: index === teamAnalytics.length - 1 ? 0 : 18 }]}> 
-              <View style={styles.memberInfo}>
-                <View style={[styles.avatar, { backgroundColor: member.color }]}>
-                  <Text style={styles.avatarText}>{member.avatar}</Text>
+        <View style={styles.teamInfo}>
+          <Text style={[styles.teamName, { color: colors.text }]}>{item.name}</Text>
+          <Text style={[styles.teamStatus, { color: colors.textSecondary }]}>
+            Last active {item.lastActive}
+          </Text>
                 </View>
-                <View style={styles.memberDetails}>
-                  <Text style={[styles.memberName, { color: colors.text }]}>{member.name}</Text>
-                  <Text style={[styles.memberStatus, { color: colors.textSecondary }]}>
-                    Last active: {member.lastActive}
+        <View style={styles.productivityBadge}>
+          <Text style={[styles.productivityText, { color: colors.blue }]}>
+            {item.productivity}%
                   </Text>
                 </View>
-                {member.name === 'John Doe' && (
-                  <TouchableOpacity 
-                      style={[styles.updateButton, { backgroundColor: colors.blue, marginLeft: 8 }]}
-                    onPress={() => Alert.alert('Update Progress', 'Update your progress here')}
-                  >
-                    <Text style={styles.updateButtonText}>Update</Text>
-                  </TouchableOpacity>
-                )}
               </View>
-              <View style={styles.analyticsStats}>
+      <View style={styles.teamStats}>
                 <View style={styles.statItem}>
-                  <Text style={[styles.statValue, { color: colors.coral }]}>{member.issuesCompleted}</Text>
+          <Text style={[styles.statValue, { color: colors.success }]}>{item.issuesCompleted}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Completed</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={[styles.statValue, { color: colors.blue }]}>{member.issuesInProgress}</Text>
+          <Text style={[styles.statValue, { color: colors.blue }]}>{item.issuesInProgress}</Text>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>In Progress</Text>
                 </View>
-                <View style={styles.statItem}>
-                  <Text style={[styles.statValue, { color: member.productivity > 80 ? '#4ECDC4' : '#FF6B6B' }]}>
-                    {member.productivity}%
-                  </Text>
-                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Productivity</Text>
                 </View>
               </View>
-            </View>
-          ))}
+  );
+
+  const renderFilterButton = ({ item }) => (
+    <TouchableOpacity
+      style={[
+        styles.filterButton,
+        {
+          backgroundColor: activeFilter === item.key ? colors.blue : colors.white,
+          borderColor: colors.border,
+        },
+      ]}
+      onPress={() => handleFilterChange(item.key)}
+    >
+      <Ionicons 
+        name={item.icon} 
+        size={16} 
+        color={activeFilter === item.key ? colors.white : colors.textSecondary} 
+      />
+      <Text style={[
+        styles.filterText,
+        { color: activeFilter === item.key ? colors.white : colors.text }
+      ]}>
+        {item.label}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderSearchResult = ({ item }) => (
+    <TouchableOpacity style={[styles.searchResultCard, { backgroundColor: colors.white }]}>
+      <View style={styles.searchResultHeader}>
+        <Text style={[styles.searchResultTitle, { color: colors.text }]}>{item.title}</Text>
+        <View style={[styles.searchResultStatus, { backgroundColor: colorScheme === 'dark' ? colors.blue + '30' : colors.blue + '20' }]}>
+          <Text style={[styles.searchResultStatusText, { color: colors.blue }]}>
+            {item.status || 'Open'}
+          </Text>
         </View>
       </View>
+      <Text style={[styles.searchResultDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+        {item.description || 'No description available'}
+      </Text>
+    </TouchableOpacity>
+  );
 
-      {/* Team Activity */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
-        <View style={[styles.activityCard, { backgroundColor: colors.white }]}>
-            {[{avatar: 'JD', name: 'John Doe', text: 'Completed issue "Fix login bug"', time: '2h ago', color: colors.coral},
-              {avatar: 'AS', name: 'Alice Smith', text: 'Started work on "Dashboard redesign"', time: '4h ago', color: colors.blue},
-              {avatar: 'MJ', name: 'Mike Johnson', text: 'Created new issue "Mobile app testing"', time: '6h ago', color: '#4ECDC4'},
-              {avatar: 'DB', name: 'David Brown', text: 'Updated sprint velocity metrics', time: '8h ago', color: '#9C27B0'},
-              {avatar: 'JS', name: 'Jane Smith', text: 'Resolved bug in payment system', time: '10h ago', color: '#607D8B'},
-              {avatar: 'RC', name: 'Robert Chen', text: 'Deployed new API endpoints', time: '12h ago', color: '#795548'},
-              {avatar: 'ED', name: 'Emily Davis', text: 'Completed user research interviews', time: '1d ago', color: '#E91E63'},
-              {avatar: 'MW', name: 'Michael Wong', text: 'Optimized database queries', time: '1d ago', color: '#3F51B5'}].map((activity, idx) => (
-              <View key={idx} style={[styles.activityItem, { marginBottom: idx === 2 ? 0 : 14 }]}> 
-                <View style={[styles.avatar, { backgroundColor: activity.color }]}> 
-                  <Text style={styles.avatarText}>{activity.avatar}</Text>
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Text style={[styles.welcomeText, { color: colors.text }]}>
+            Welcome back, {userName}!
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Here's your project overview
+          </Text>
             </View>
-            <View style={styles.activityContent}>
-                  <Text style={[styles.activityName, { color: colors.text }]}>{activity.name}</Text>
-                  <Text style={[styles.activityText, { color: colors.text }]}>{activity.text}</Text>
+        <TouchableOpacity 
+          style={[styles.reportsButton, { backgroundColor: colors.blue }]}
+          onPress={() => setIsReportsModalVisible(true)}
+        >
+          <Ionicons name="analytics" size={20} color={colors.white} />
+        </TouchableOpacity>
             </View>
-                <Text style={[styles.activityTime, { color: colors.text }]}>{activity.time}</Text>
-          </View>
-            ))}
-            </View>
-          </View>
 
-      {/* Personal Focus & Burnout Prevention */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Personal Focus & Burnout Prevention</Text>
-        <View style={[styles.focusCard, { backgroundColor: colors.white }]}> 
-          <Text style={{ fontWeight: 'bold', color: colors.coral, marginBottom: 4 }}>Hi {userName}, here’s your current focus:</Text>
-          <Text style={{ color: colors.text, marginBottom: 8 }}>Assigned Issues: {myIssues.length}</Text>
-          <Text style={{ color: colors.text, marginBottom: 8 }}>Overdue: {overdue.length}</Text>
-          <Text style={{ color: colors.text, marginBottom: 8 }}>Estimated Hours: {totalEstimated}</Text>
-          <Text style={{ color: colors.text, marginBottom: 8 }}>Logged Hours: {totalLogged}</Text>
-          <Text style={{ color: colors.text, marginBottom: 8 }}>Workload: {workloadLevel}</Text>
-          <Text style={{ color: burnoutRisk === 'At Risk' ? colors.coral : '#4ECDC4', fontWeight: 'bold', marginBottom: 8 }}>Burnout Risk: {burnoutRisk}</Text>
-          {focusSuggestions.map((s, i) => (
-            <Text key={i} style={{ color: colors.textSecondary, marginBottom: 2 }}>• {s}</Text>
-          ))}
-        </View>
-        {myIssues.length > 0 && (
-          <View style={[styles.focusList, { backgroundColor: colors.white, marginTop: 10, borderRadius: 8, padding: 10 }]}> 
-            <Text style={{ fontWeight: 'bold', color: colors.text, marginBottom: 6 }}>Your Assigned Issues:</Text>
-            {myIssues.map(issue => (
-              <View key={issue.id} style={{ marginBottom: 8 }}>
-                <Text style={{ color: colors.coral, fontWeight: 'bold' }}>{issue.key}: {issue.title}</Text>
-                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Due: {new Date(issue.dueDate).toLocaleDateString()} | Status: {issue.status}</Text>
-              </View>
-            ))}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Search and Filters */}
+        <View style={styles.searchSection}>
+          <View style={[styles.searchContainer, { backgroundColor: colors.white }]}>
+            <Ionicons name="search" size={20} color={colors.textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="Search issues, sprints..."
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={handleSearch}
+            />
+            <TouchableOpacity 
+              onPress={() => setShowFilters(!showFilters)} 
+              style={styles.filterToggle}
+            >
+              <Ionicons name="filter" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          
+          {showFilters && (
+            <FlatList
+              data={filters}
+              renderItem={renderFilterButton}
+              keyExtractor={(item) => item.key}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filtersContainer}
+            />
+          )}
+            </View>
+
+        {/* Search Results */}
+        {searchQuery.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Search Results ({filteredIssues.length})
+            </Text>
+            <FlatList
+              data={filteredIssues.slice(0, 3)}
+              renderItem={renderSearchResult}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+            />
+            {filteredIssues.length > 3 && (
+              <TouchableOpacity style={styles.viewMoreButton} onPress={handleViewMoreResults}>
+                <Text style={[styles.viewMoreText, { color: colors.blue }]}>
+                  View {filteredIssues.length - 3} more results
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
+
+        {/* Metrics */}
+      <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Key Metrics</Text>
+          <FlatList
+            data={metrics}
+            renderItem={renderMetricCard}
+            keyExtractor={(item) => item.title}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.metricsContainer}
+          />
+        </View>
+
+        {/* Recent Sprints */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Sprints</Text>
+            <TouchableOpacity onPress={handleViewAllSprints} style={styles.viewAllButton}>
+              <Text style={[styles.viewAllText, { color: colors.blue }]}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={recentSprints}
+            renderItem={renderSprintCard}
+            keyExtractor={(item) => item.name}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.sprintsContainer}
+          />
+              </View>
+
+        {/* Team Performance */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Team Performance</Text>
+          </View>
+          <FlatList
+            data={teamAnalytics}
+            renderItem={renderTeamMember}
+            keyExtractor={(item) => item.name}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={false}
+          />
       </View>
-      {/* Continuous Retrospective Section */}
-      <RetrospectiveSection />
       </ScrollView>
 
       <ReportsModal
         visible={isReportsModalVisible}
-        issues={issues}
-        sprints={sprints}
         onClose={() => setIsReportsModalVisible(false)}
       />
-    </RetrospectiveProvider>
+    </View>
   );
 }
 
@@ -430,208 +373,194 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 36,
-    paddingBottom: 8,
-    backgroundColor: 'transparent',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  headerButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 12,
-    flexShrink: 1,
-    flexWrap: 'wrap', // allow buttons to wrap if space is tight
-    gap: 8,
+  headerContent: {
+    flex: 1,
+    marginRight: 10,
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
   },
   reportsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterToggle: {
+    padding: 8,
+  },
+  content: {
+    flex: 1,
+  },
+  searchSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginRight: 8,
-    flexShrink: 1,
-    maxWidth: 120,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 12,
   },
-  reportsButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    flexShrink: 1,
-    flexWrap: 'wrap',
+  searchInput: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+  },
+  filtersContainer: {
+    gap: 8,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 8,
     borderWidth: 1,
-    flexShrink: 1,
-    maxWidth: 120,
+    gap: 6,
   },
   filterText: {
-    marginLeft: 4,
     fontSize: 14,
-    fontWeight: '600',
-    flexShrink: 1,
-    flexWrap: 'wrap',
-  },
-  metricsGridWrapper: {
-    paddingHorizontal: 20,
-    marginBottom: 8,
-  },
-  metricsGridRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  metricCard: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  metricContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-  },
-  metricIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  metricText: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  metricValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  metricTitle: {
-    fontSize: 12,
     fontWeight: '500',
-    opacity: 0.7,
   },
   section: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+    marginBottom: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
+    paddingHorizontal: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontSize: 18,
+    fontWeight: '600',
   },
   viewAllButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
   viewAllText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  metricsContainer: {
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  metricCard: {
+    width: 120,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  metricHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  metricIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  metricChange: {
     fontSize: 12,
     fontWeight: '600',
   },
+  metricValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  metricTitle: {
+    fontSize: 12,
+  },
+  sprintsContainer: {
+    paddingHorizontal: 20,
+    gap: 12,
+  },
   sprintCard: {
-    borderRadius: 12,
+    width: 200,
     padding: 16,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
   },
   sprintHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   sprintName: {
     fontSize: 16,
     fontWeight: '600',
   },
-  sprintDays: {
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    marginBottom: 8,
   },
   progressBar: {
     flex: 1,
-    height: 8,
+    height: 6,
     backgroundColor: '#E5E5E5',
-    borderRadius: 4,
-    overflow: 'hidden',
+    borderRadius: 3,
+    marginRight: 8,
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   progressText: {
     fontSize: 12,
     fontWeight: '600',
-    minWidth: 35,
-    marginLeft: 8,
   },
-  analyticsCard: {
-    borderRadius: 12,
+  sprintDays: {
+    fontSize: 12,
+  },
+  teamCard: {
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    marginHorizontal: 20,
+    marginBottom: 12,
   },
-  analyticsItem: {
-    marginBottom: 18,
-  },
-  memberInfo: {
+  teamHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   avatar: {
     width: 40,
@@ -643,103 +572,83 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
-  memberDetails: {
+  teamInfo: {
     flex: 1,
   },
-  memberName: {
+  teamName: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 2,
   },
-  memberStatus: {
+  teamStatus: {
     fontSize: 12,
   },
-  analyticsStats: {
+  productivityBadge: {
+    backgroundColor: '#E6F0FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  productivityText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  teamStats: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    gap: 24,
   },
   statItem: {
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  updateButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    alignSelf: 'flex-start',
-  },
-  updateButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  activityCard: {
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  activityContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  activityName: {
-    fontSize: 14,
-    fontWeight: '600',
     marginBottom: 2,
   },
-  activityText: {
+  statLabel: {
     fontSize: 12,
-    opacity: 0.8,
   },
-  activityTime: {
-    fontSize: 11,
-    opacity: 0.6,
-    marginLeft: 8,
-  },
-  focusCard: {
-    borderRadius: 12,
+  searchResultCard: {
     padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    marginHorizontal: 20,
     marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3.84,
-    elevation: 3,
   },
-  focusList: {
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+  searchResultHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  searchResultTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  searchResultStatus: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  searchResultStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  searchResultDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  viewMoreButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  viewMoreText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 }); 

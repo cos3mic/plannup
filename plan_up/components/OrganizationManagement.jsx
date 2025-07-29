@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, TextInput, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { useOrganizationCustom } from './OrganizationContext';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
 import EmailInviteModal from './EmailInviteModal';
 import InviteManagementModal from './InviteManagementModal';
+import { useTheme } from '../hooks/useTheme';
 
 export default function OrganizationManagement() {
   const {
@@ -27,8 +27,8 @@ export default function OrganizationManagement() {
   const [isEmailInviteModalVisible, setIsEmailInviteModalVisible] = useState(false);
   const [isInviteManagementModalVisible, setIsInviteManagementModalVisible] = useState(false);
   
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
 
   // Loading state (simulate async if needed)
   if (!organizations) {

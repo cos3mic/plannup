@@ -1,18 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
+import { useTheme } from '../hooks/useTheme';
 
 // Mock data for search results
 const mockSearchData = [
@@ -54,8 +53,8 @@ const mockSearchData = [
 ];
 
 export default function SearchModal({ visible, onClose }) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -233,7 +232,7 @@ export default function SearchModal({ visible, onClose }) {
         <View style={styles.resultsContainer}>
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.coral} />
+              <Ionicons name="search" size={48} color={colors.textSecondary} />
               <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                 Searching...
               </Text>

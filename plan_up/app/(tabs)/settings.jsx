@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,26 +7,26 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
-  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useUser, useAuth, useOrganizationList } from '@clerk/clerk-expo';
+import { useUser, useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors.jsx';
-import { useColorScheme } from 'react-native';
-import NotificationTestButton from '../../components/NotificationTestButton';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function SettingsScreen() {
   const { user } = useUser();
   const { signOut } = useAuth();
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const { organizationList, setActive } = useOrganizationList();
+  const { colorScheme, userTheme, setTheme, isSystemTheme } = useTheme();
+  const colors = Colors[colorScheme];
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [emailNotifications, setEmailNotifications] = useState(true);
 
-  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
-  const [emailNotifications, setEmailNotifications] = React.useState(true);
+  const handleThemeChange = async (isDarkMode) => {
+    const newTheme = isDarkMode ? 'dark' : 'light';
+    await setTheme(newTheme);
+  };
 
   const handleSignOut = async () => {
     Alert.alert(
@@ -56,306 +56,140 @@ export default function SettingsScreen() {
   const handleProfileEdit = () => {
     Alert.alert(
       'Profile Settings',
-      'Profile editing is available through your Clerk dashboard. You can update your name, email, and profile picture there.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Open Dashboard', 
-          onPress: () => {
-            // In a real app, you'd navigate to Clerk's user profile page
-            Alert.alert('Info', 'Profile management is handled through Clerk authentication service.');
-          }
-        },
-      ]
-    );
-  };
-
-  const handleTeamMembers = () => {
-    Alert.alert(
-      'Team Members',
-      'Manage your team members and their permissions.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Manage Team', 
-          onPress: () => {
-            Alert.alert('Team Management', 'Team management features will be available in the next update.');
-          }
-        },
-      ]
-    );
-  };
-
-  const handleWorkspaceSettings = () => {
-    Alert.alert(
-      'Workspace Settings',
-      'Configure workspace preferences, themes, and integrations.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Configure', 
-          onPress: () => {
-            Alert.alert('Workspace Configuration', 'Workspace settings will be available in the next update.');
-          }
-        },
-      ]
-    );
-  };
-
-  const handleExportData = () => {
-    Alert.alert(
-      'Export Data',
-      'Export your project data, issues, and reports.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Export', 
-          onPress: () => {
-            Alert.alert('Data Export', 'Data export feature will be available in the next update.');
-          }
-        },
-      ]
-    );
-  };
-
-  const handleHelpDocumentation = () => {
-    Alert.alert(
-      'Help & Documentation',
-      'Access help guides, tutorials, and documentation.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'View Docs', 
-          onPress: () => {
-            Alert.alert('Documentation', 'Help documentation will be available in the next update.');
-          }
-        },
-      ]
-    );
-  };
-
-  const handleContactSupport = () => {
-    Alert.alert(
-      'Contact Support',
-      'Get in touch with our support team for assistance.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Contact Us', 
-          onPress: () => {
-            Alert.alert('Support Contact', 'Support contact information will be available in the next update.');
-          }
-        },
-      ]
-    );
-  };
-
-  const handleAbout = () => {
-    Alert.alert(
-      'About PlanUp',
-      'PlanUp v1.0.0\n\nA modern project management platform built with React Native and Clerk authentication.\n\nFeatures:\n• Issue tracking\n• Sprint management\n• Team collaboration\n• Real-time notifications\n• Google Calendar integration',
+      'Profile editing is available through your Clerk dashboard.',
       [{ text: 'OK' }]
     );
   };
 
   const renderSettingItem = ({ icon, title, subtitle, onPress, showSwitch, switchValue, onSwitchChange, showArrow = true }) => (
     <TouchableOpacity
-      style={[styles.settingItem, { borderBottomColor: colors.border }]}
+      style={[styles.settingItem, { backgroundColor: colors.white, borderColor: colors.border }]}
       onPress={onPress}
       disabled={showSwitch}
     >
-      <View style={styles.settingItemLeft}>
-        <View style={[styles.iconContainer, { backgroundColor: colors.blue }]}>
-          <Ionicons name={icon} size={20} color={colors.white} />
+      <View style={styles.settingLeft}>
+        <View style={[styles.settingIcon, { backgroundColor: colorScheme === 'dark' ? colors.blue + '30' : colors.blue + '20' }]}>
+          <Ionicons name={icon} size={20} color={colors.blue} />
         </View>
         <View style={styles.settingText}>
           <Text style={[styles.settingTitle, { color: colors.text }]}>{title}</Text>
           {subtitle && (
-            <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
-              {subtitle}
-            </Text>
+            <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
           )}
         </View>
       </View>
-      <View style={styles.settingItemRight}>
-        {showSwitch ? (
-          <Switch
-            value={switchValue}
-            onValueChange={onSwitchChange}
-            trackColor={{ false: colors.border, true: colors.coral }}
-            thumbColor={colors.white}
-          />
-        ) : showArrow ? (
-          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-        ) : null}
-      </View>
+      {showSwitch ? (
+        <Switch
+          value={switchValue}
+          onValueChange={onSwitchChange}
+          trackColor={{ false: colors.border, true: colorScheme === 'dark' ? colors.blue + '40' : colors.blue + '40' }}
+          thumbColor={switchValue ? colors.blue : colors.textSecondary}
+        />
+      ) : showArrow ? (
+        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+      ) : null}
     </TouchableOpacity>
   );
 
   const renderSectionHeader = (title) => (
     <View style={styles.sectionHeader}>
-      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
     </View>
   );
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Profile Section */}
-      <View style={[styles.section, { backgroundColor: colors.white }]}>
-        <View style={styles.profileSection}>
-          <View style={[styles.avatar, { backgroundColor: colors.coral }]}>
-            <Text style={styles.avatarText}>
-              {user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
-            </Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={[styles.profileName, { color: colors.text }]}>
-              {user?.firstName} {user?.lastName}
-            </Text>
-            <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>
-              {user?.emailAddresses?.[0]?.emailAddress}
-            </Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Profile Section */}
+        <View style={styles.section}>
+          {renderSectionHeader('Profile')}
+          <View style={[styles.profileCard, { backgroundColor: colors.white }]}>
+            <View style={[styles.avatar, { backgroundColor: colors.blue }]}>
+              <Text style={styles.avatarText}>
+                {user?.firstName?.charAt(0) || user?.primaryEmailAddress?.emailAddress?.charAt(0) || 'U'}
+              </Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: colors.text }]}>
+                {user?.fullName || user?.firstName || 'User'}
+              </Text>
+              <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>
+                {user?.primaryEmailAddress?.emailAddress || 'user@example.com'}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={handleProfileEdit}>
+              <Ionicons name="pencil" size={20} color={colors.blue} />
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
 
-      {/* Account Settings */}
-      <View style={[styles.section, { backgroundColor: colors.white }]}>
-        {renderSectionHeader('Account')}
-        {renderSettingItem({
-          icon: 'person',
-          title: 'Profile',
-          subtitle: 'Edit your profile information',
-          onPress: handleProfileEdit,
-        })}
-      </View>
-
-      {/* Preferences */}
-      <View style={[styles.section, { backgroundColor: colors.white }]}>
-        {renderSectionHeader('Preferences')}
-        {renderSettingItem({
-          icon: 'notifications',
-          title: 'Push Notifications',
-          subtitle: 'Receive notifications for updates',
-          showSwitch: true,
-          switchValue: notificationsEnabled,
-          onSwitchChange: setNotificationsEnabled,
-          showArrow: false,
-        })}
-        {renderSettingItem({
-          icon: 'mail',
-          title: 'Email Notifications',
-          subtitle: 'Receive email updates',
-          showSwitch: true,
-          switchValue: emailNotifications,
-          onSwitchChange: setEmailNotifications,
-          showArrow: false,
-        })}
-        {renderSettingItem({
-          icon: 'moon',
-          title: 'Dark Mode',
-          subtitle: 'Use dark theme',
-          showSwitch: true,
-          switchValue: darkModeEnabled,
-          onSwitchChange: setDarkModeEnabled,
-          showArrow: false,
-        })}
-      </View>
-
-      {/* Workspace */}
-      <View style={[styles.section, { backgroundColor: colors.white }]}>
-        {renderSectionHeader('Workspace')}
-        {renderSettingItem({
-          icon: 'people',
-          title: 'Team Members',
-          subtitle: 'Manage team access',
-          onPress: handleTeamMembers,
-        })}
-        {renderSettingItem({
-          icon: 'settings',
-          title: 'Workspace Settings',
-          subtitle: 'Configure workspace preferences',
-          onPress: handleWorkspaceSettings,
-        })}
-        {renderSettingItem({
-          icon: 'download',
-          title: 'Export Data',
-          subtitle: 'Download your data',
-          onPress: handleExportData,
-        })}
-      </View>
-
-      {/* Manage Organization */}
-      <View style={[styles.section, { backgroundColor: colors.white }]}>
-        {renderSectionHeader('Manage Organization')}
-        {renderSettingItem({
-          icon: 'add-circle',
-          title: 'Create Organization',
-          subtitle: 'Start a new organization/workspace',
-          onPress: () => setActive({ createOrganization: true }),
-        })}
-        {renderSettingItem({
-          icon: 'log-in',
-          title: 'Join Organization',
-          subtitle: 'Join with an invite link or code',
-          onPress: () => setActive({ joinOrganization: true }),
-        })}
-        {Array.isArray(organizationList) && organizationList.length > 0 && renderSettingItem({
-          icon: 'swap-horizontal',
-          title: 'Switch Organization',
-          subtitle: 'Change your active organization',
-          onPress: () => Alert.alert('Switch Organization', 'Go to Organization Management to switch.'),
-        })}
-        {Array.isArray(organizationList) && organizationList.length > 0 && renderSettingItem({
-          icon: 'settings-outline',
-          title: 'Organization Management',
-          subtitle: 'Manage members, roles, and settings',
-          onPress: () => router.push('/Organization'),
-        })}
-      </View>
-
-      {/* Notification Testing */}
-      <View style={[styles.section, { backgroundColor: colors.white }]}>
-        {renderSectionHeader('Notification Testing')}
-        <View style={styles.notificationTestContainer}>
-          <NotificationTestButton />
+        {/* Preferences Section */}
+        <View style={styles.section}>
+          {renderSectionHeader('Preferences')}
+          {renderSettingItem({
+            icon: 'notifications',
+            title: 'Push Notifications',
+            subtitle: 'Receive notifications for updates',
+            showSwitch: true,
+            switchValue: notificationsEnabled,
+            onSwitchChange: setNotificationsEnabled,
+            showArrow: false,
+          })}
+          {renderSettingItem({
+            icon: 'mail',
+            title: 'Email Notifications',
+            subtitle: 'Receive email updates',
+            showSwitch: true,
+            switchValue: emailNotifications,
+            onSwitchChange: setEmailNotifications,
+            showArrow: false,
+          })}
+          {renderSettingItem({
+            icon: 'moon',
+            title: 'Dark Mode',
+            subtitle: isSystemTheme ? 'Follow system theme' : (userTheme === 'dark' ? 'Dark theme enabled' : 'Light theme enabled'),
+            showSwitch: true,
+            switchValue: colorScheme === 'dark',
+            onSwitchChange: handleThemeChange,
+            showArrow: false,
+          })}
         </View>
-      </View>
 
-      {/* Support */}
-      <View style={[styles.section, { backgroundColor: colors.white }]}>
-        {renderSectionHeader('Support')}
-        {renderSettingItem({
-          icon: 'help-circle',
-          title: 'Help & Documentation',
-          subtitle: 'Get help and learn more',
-          onPress: handleHelpDocumentation,
-        })}
-        {renderSettingItem({
-          icon: 'chatbubble',
-          title: 'Contact Support',
-          subtitle: 'Get in touch with our team',
-          onPress: handleContactSupport,
-        })}
-        {renderSettingItem({
-          icon: 'information-circle',
-          title: 'About',
-          subtitle: 'App version and information',
-          onPress: handleAbout,
-        })}
-      </View>
+        {/* Account Section */}
+        <View style={styles.section}>
+          {renderSectionHeader('Account')}
+          {renderSettingItem({
+            icon: 'shield-checkmark',
+            title: 'Privacy & Security',
+            subtitle: 'Manage your privacy settings',
+            onPress: () => Alert.alert('Privacy', 'Privacy settings will be available soon.'),
+          })}
+          {renderSettingItem({
+            icon: 'help-circle',
+            title: 'Help & Support',
+            subtitle: 'Get help and contact support',
+            onPress: () => Alert.alert('Support', 'Support features will be available soon.'),
+          })}
+          {renderSettingItem({
+            icon: 'information-circle',
+            title: 'About',
+            subtitle: 'App version and information',
+            onPress: () => Alert.alert('About', 'PlanUp v1.0.0\nYour project management companion'),
+          })}
+        </View>
 
-      {/* Sign Out */}
-      <View style={[styles.section, { backgroundColor: colors.white }]}>
-        <TouchableOpacity
-          style={[styles.signOutButton, { backgroundColor: colors.error }]}
-          onPress={handleSignOut}
-        >
-          <Ionicons name="log-out" size={20} color={colors.white} />
-          <Text style={[styles.signOutText, { color: colors.white }]}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        {/* Sign Out */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={[styles.signOutButton, { backgroundColor: colors.error }]}
+            onPress={handleSignOut}
+          >
+            <Ionicons name="log-out" size={20} color={colors.white} />
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -363,46 +197,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  content: {
+    flex: 1,
+  },
   section: {
-    marginBottom: 20,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    overflow: 'hidden',
+    marginBottom: 24,
   },
   sectionHeader: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  profileSection: {
+  profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 20,
+    marginHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
   avatarText: {
-    fontSize: 24,
+    color: '#fff',
+    fontSize: 20,
     fontWeight: 'bold',
-    color: 'white',
   },
   profileInfo: {
     flex: 1,
   },
   profileName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     marginBottom: 4,
   },
   profileEmail: {
@@ -412,19 +247,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  settingItemLeft: {
+  settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+  settingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -440,24 +277,18 @@ const styles = StyleSheet.create({
   settingSubtitle: {
     fontSize: 14,
   },
-  settingItemRight: {
-    alignItems: 'center',
-  },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    marginHorizontal: 16,
-    marginVertical: 16,
-    borderRadius: 8,
+    padding: 16,
+    marginHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
   },
   signOutText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 8,
-  },
-  notificationTestContainer: {
-    paddingVertical: 8,
   },
 }); 

@@ -2,7 +2,6 @@ import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
 import { ClerkProvider } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
@@ -15,6 +14,7 @@ import { IdeaProvider } from '../components/IdeaContext.jsx';
 import { View } from 'react-native';
 import CustomDrawerContent from '../components/CustomDrawerContent';
 import PushNotificationService from '../components/PushNotificationService';
+import { useTheme, ThemeProvider } from '../hooks/useTheme';
 
 // Import screens
 import HomeScreen from './(tabs)/index.jsx';
@@ -33,8 +33,8 @@ const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -43,7 +43,7 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: colors.white,
           borderTopWidth: 1,
-          borderTopColor: '#E5E5E5',
+          borderTopColor: colors.border,
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
@@ -69,18 +69,6 @@ function MainTabs() {
   );
 }
 
-function AppProviders({ children }) {
-  const { user } = useUser();
-  const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || 'anonymous';
-  return (
-    <OrganizationProvider userEmail={userEmail}>
-      <IdeaProvider userEmail={userEmail}>
-        {children}
-      </IdeaProvider>
-    </OrganizationProvider>
-  );
-}
-
 export default function RootLayout() {
   const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -88,9 +76,11 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
         <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
-          <OrganizationProviderWrapper>
-            <RootLayoutInner />
-          </OrganizationProviderWrapper>
+          <ThemeProvider>
+            <OrganizationProviderWrapper>
+              <RootLayoutInner />
+            </OrganizationProviderWrapper>
+          </ThemeProvider>
         </ClerkProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>
@@ -99,6 +89,8 @@ export default function RootLayout() {
 
 function RootLayoutInner() {
   const { isSignedIn, isLoaded } = useAuth();
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
 
   // Initialize push notifications
   React.useEffect(() => {
@@ -144,6 +136,19 @@ function RootLayoutInner() {
         drawerContent={props => <CustomDrawerContent {...props} />}
         screenOptions={{
           headerShown: true,
+          drawerStyle: {
+            backgroundColor: colors.background,
+            width: 320,
+          },
+          drawerActiveTintColor: colors.coral,
+          drawerInactiveTintColor: colors.textSecondary,
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerTintColor: colors.text,
+          headerTitleStyle: {
+            color: colors.text,
+          },
         }}
       >
         <Drawer.Screen name="Main" component={MainTabs} options={{ title: 'Main' }} />
@@ -153,5 +158,17 @@ function RootLayoutInner() {
         <Drawer.Screen name="Settings" component={SettingsScreen} />
       </Drawer.Navigator>
     </AppProviders>
+  );
+}
+
+function AppProviders({ children }) {
+  const { user } = useUser();
+  const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || 'anonymous';
+  return (
+    <OrganizationProvider userEmail={userEmail}>
+      <IdeaProvider userEmail={userEmail}>
+        {children}
+      </IdeaProvider>
+    </OrganizationProvider>
   );
 }

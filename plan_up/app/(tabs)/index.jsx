@@ -2,7 +2,7 @@ import { SignedIn, SignedOut, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import CreateIssueModal from '../../components/CreateIssueModal';
 import SearchModal from '../../components/SearchModal';
 import SprintModal from '../../components/SprintModal';
@@ -11,12 +11,14 @@ import { SignOutButton } from '../../components/SignOutButton';
 import ActivityItem from '../../components/ActivityItem';
 import UpdateActivityModal from '../../components/UpdateActivityModal';
 import { useRecentActivities } from '../../hooks/useRecentActivities';
+import { useSprints } from '../../hooks/useSprints';
 import { Colors } from '../../constants/Colors.jsx';
 import PendingInvitesNotification from '../../components/PendingInvitesNotification';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const { user } = useUser();
   const [isCreateIssueModalVisible, setIsCreateIssueModalVisible] = useState(false);
   const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
@@ -26,12 +28,17 @@ export default function HomeScreen() {
   const [selectedActivity, setSelectedActivity] = useState(null);
   
   const { activities, addActivity, updateActivity, deleteActivity } = useRecentActivities();
+  const { addSprint } = useSprints();
 
   // Get user's first name
   const firstName = user?.firstName || user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 'User';
 
   const handleIssueCreated = (activity) => {
     addActivity(activity);
+  };
+
+  const handleSprintCreated = (sprint) => {
+    addSprint(sprint);
   };
 
   const handleActivityUpdate = (activity) => {
@@ -52,7 +59,9 @@ export default function HomeScreen() {
   return (
     <>
       <SignedIn>
-        <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+        <ScrollView 
+          contentContainerStyle={{ paddingBottom: 32, backgroundColor: colors.background }}
+        >
           <View style={styles.header}>
             <Text style={[styles.welcomeText, { color: colors.text }]}>
               Welcome to PlanUp, {firstName}!
@@ -151,6 +160,7 @@ export default function HomeScreen() {
         <SprintModal
           visible={isSprintModalVisible}
           onClose={() => setIsSprintModalVisible(false)}
+          onSprintCreated={handleSprintCreated}
         />
 
         <ReportsModal
@@ -192,7 +202,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // flex: 1, // Remove this line to avoid scroll issues
   },
   header: {
     padding: 20,

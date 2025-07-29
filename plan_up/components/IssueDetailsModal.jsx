@@ -10,15 +10,18 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    useColorScheme,
     View,
 } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { Colors } from '../constants/Colors.jsx';
 import SubTaskModal from './SubTaskModal.jsx';
 import IssueLinksModal from './IssueLinksModal.jsx';
 import WorkflowModal from './WorkflowModal.jsx';
 import AdvancedSearchModal from './AdvancedSearchModal.jsx';
 import TimeTrackingModal from './TimeTrackingModal.jsx';
+import { useTheme } from '../hooks/useTheme';
 
 export default function IssueDetailsModal({ 
   visible, 
@@ -51,8 +54,8 @@ export default function IssueDetailsModal({
   onSelectWorkflow,
   currentWorkflow,
 }) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   
   const [activeTab, setActiveTab] = useState('details');
   const [commentText, setCommentText] = useState('');
@@ -131,13 +134,13 @@ export default function IssueDetailsModal({
   };
 
   const handleAddTimeLog = async () => {
-    if (!timeLogHours || !timeLogDescription.trim()) {
-      Alert.alert('Error', 'Please enter hours and description');
+    if (!timeLogHours && !timeLogDescription.trim()) {
+      Alert.alert('Error', 'Please enter either hours or a description');
       return;
     }
 
-    const hours = parseFloat(timeLogHours);
-    if (isNaN(hours) || hours <= 0) {
+    const hours = timeLogHours ? parseFloat(timeLogHours) : 0;
+    if (timeLogHours && (isNaN(hours) || hours < 0)) {
       Alert.alert('Error', 'Please enter a valid number of hours');
       return;
     }
@@ -145,21 +148,91 @@ export default function IssueDetailsModal({
     setIsLoading(true);
     try {
       await onAddTimeLog(issue.id, {
-        author: 'Current User',
-        hours,
-        description: timeLogDescription.trim(),
+        author: userName,
+        hours: hours || 0,
+        description: timeLogDescription.trim() || 'Time logged',
       });
       setTimeLogHours('');
       setTimeLogDescription('');
+      Alert.alert('Success', 'Time logged successfully!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to log time');
+      Alert.alert('Error', 'Failed to log time. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAddAttachment = () => {
-    Alert.alert('Info', 'File upload functionality would be implemented here');
+  const handleAddAttachment = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Pick a document
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*', // Allow all file types
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (result.canceled) {
+        setIsLoading(false);
+        return;
+      }
+
+      const file = result.assets[0];
+      
+      // Get file info
+      const fileInfo = await FileSystem.getInfoAsync(file.uri);
+      const fileSize = fileInfo.size;
+      const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+      
+      // Create attachment object
+      const attachment = {
+        id: Date.now().toString(),
+        name: file.name,
+        size: `${fileSizeMB} MB`,
+        uploadedBy: userName,
+        uploadedAt: new Date().toISOString(),
+        type: file.mimeType || 'application/octet-stream',
+        uri: file.uri,
+        fileSize: fileSize,
+      };
+      
+      // Call the onAddAttachment prop if provided
+      if (onAddAttachment) {
+        await onAddAttachment(issue.id, attachment);
+      }
+      
+      Alert.alert('Success', `File "${file.name}" uploaded successfully!`);
+      
+    } catch (error) {
+      console.error('File upload error:', error);
+      Alert.alert('Error', 'Failed to upload file. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenAttachment = async (attachment) => {
+    try {
+      if (attachment.uri) {
+        // Check if sharing is available
+        const isAvailable = await Sharing.isAvailableAsync();
+        
+        if (isAvailable) {
+          await Sharing.shareAsync(attachment.uri, {
+            mimeType: attachment.type,
+            dialogTitle: `Open ${attachment.name}`,
+          });
+        } else {
+          Alert.alert('Info', 'Sharing is not available on this device');
+        }
+      } else {
+        Alert.alert('Error', 'File not found');
+      }
+    } catch (error) {
+      console.error('Error opening file:', error);
+      Alert.alert('Error', 'Failed to open file');
+    }
   };
 
   const getSubTasksProgress = () => {
@@ -472,11 +545,11 @@ export default function IssueDetailsModal({
               style={[
                 styles.addButton,
                 {
-                  backgroundColor: isLoading ? colors.textSecondary : colors.coral,
+                  backgroundColor: isLoading || !commentText.trim() ? colors.textSecondary : colors.coral,
                 },
               ]}
               onPress={handleAddComment}
-              disabled={isLoading}
+              disabled={isLoading || !commentText.trim()}
             >
               {isLoading ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -569,11 +642,11 @@ export default function IssueDetailsModal({
           style={[
             styles.logTimeButton,
             {
-              backgroundColor: isLoading ? colors.textSecondary : colors.coral,
+              backgroundColor: isLoading || (!timeLogHours && !timeLogDescription.trim()) ? colors.textSecondary : colors.coral,
             },
           ]}
           onPress={handleAddTimeLog}
-          disabled={isLoading}
+          disabled={isLoading || (!timeLogHours && !timeLogDescription.trim())}
         >
           {isLoading ? (
             <ActivityIndicator color="#fff" size="small" />
@@ -589,18 +662,67 @@ export default function IssueDetailsModal({
     <View style={styles.tabContent}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Attachments</Text>
       
+      {/* Upload Button */}
       <TouchableOpacity
-        style={[styles.uploadButton, { backgroundColor: colors.white, borderColor: colors.border }]}
+        style={[
+          styles.uploadButton, 
+          { 
+            backgroundColor: colors.white, 
+            borderColor: colors.border,
+            opacity: isLoading ? 0.6 : 1
+          }
+        ]}
         onPress={handleAddAttachment}
+        disabled={isLoading}
       >
-        <Ionicons name="cloud-upload" size={32} color={colors.coral} />
-        <Text style={[styles.uploadText, { color: colors.text }]}>
-          Upload Files
-        </Text>
-        <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>
-          Drag and drop files here or click to browse
-        </Text>
+        {isLoading ? (
+          <ActivityIndicator size="large" color={colors.coral} />
+        ) : (
+          <>
+            <Ionicons name="cloud-upload" size={32} color={colors.coral} />
+            <Text style={[styles.uploadText, { color: colors.text }]}>
+              Upload Files
+            </Text>
+            <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>
+              Tap to select files from your device
+            </Text>
+          </>
+        )}
       </TouchableOpacity>
+
+      {/* Attachments List */}
+      {issue?.attachments && issue.attachments.length > 0 && (
+        <View style={styles.attachmentsList}>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+            Uploaded Files ({issue.attachments.length})
+          </Text>
+          {issue.attachments.map((attachment, index) => (
+            <TouchableOpacity 
+              key={attachment.id || index} 
+              style={[styles.attachmentItem, { backgroundColor: colors.white }]}
+              onPress={() => handleOpenAttachment(attachment)}
+            >
+              <View style={styles.attachmentInfo}>
+                <Ionicons name="document" size={20} color={colors.coral} />
+                <View style={styles.attachmentDetails}>
+                  <Text style={[styles.attachmentName, { color: colors.text }]} numberOfLines={1}>
+                    {attachment.name}
+                  </Text>
+                  <Text style={[styles.attachmentMeta, { color: colors.textSecondary }]}>
+                    {attachment.size} • {formatDate(attachment.uploadedAt)}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={styles.downloadButton}
+                onPress={() => handleOpenAttachment(attachment)}
+              >
+                <Ionicons name="open" size={16} color={colors.coral} />
+              </TouchableOpacity>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   );
 
@@ -642,7 +764,7 @@ export default function IssueDetailsModal({
               style={[
                 styles.addButton,
                 {
-                  backgroundColor: decisionLogLoading ? colors.textSecondary : colors.coral,
+                  backgroundColor: decisionLogLoading || !decisionLogText.trim() ? colors.textSecondary : colors.coral,
                 },
               ]}
               onPress={async () => {
@@ -664,7 +786,7 @@ export default function IssueDetailsModal({
                   setDecisionLogLoading(false);
                 }
               }}
-              disabled={decisionLogLoading}
+              disabled={decisionLogLoading || !decisionLogText.trim()}
             >
               {decisionLogLoading ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -735,10 +857,7 @@ export default function IssueDetailsModal({
                 key={tab.key}
                 style={[
                   styles.tabButton,
-                  {
-                    backgroundColor: activeTab === tab.key ? colors.coral : colors.white,
-                    borderColor: activeTab === tab.key ? colors.coral : colors.border,
-                  },
+                  activeTab === tab.key ? styles.tabButtonActive : {},
                 ]}
                 onPress={() => setActiveTab(tab.key)}
               >
@@ -749,7 +868,7 @@ export default function IssueDetailsModal({
                 />
                 <Text style={[
                   styles.tabText,
-                  { color: activeTab === tab.key ? '#fff' : colors.text }
+                  activeTab === tab.key ? styles.tabTextActive : {},
                 ]}>
                   {tab.label}
                 </Text>
@@ -844,27 +963,54 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   tabsContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 0,
+    paddingTop: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
+    height: 48,
+    backgroundColor: '#F6F8FB',
   },
   tabButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 0,
+    borderRadius: 20,
     borderWidth: 1,
-    marginRight: 8,
+    marginRight: 12,
     gap: 6,
+    minWidth: 110,
+    maxWidth: 140,
+    justifyContent: 'center',
+    height: 38,
+    backgroundColor: '#F0F4FA',
+    borderColor: '#D0D7E2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  tabButtonActive: {
+    backgroundColor: '#2684FF',
+    borderColor: '#2684FF',
+    transform: [{ scale: 1.08 }],
+    zIndex: 2,
   },
   tabText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '700',
+    paddingVertical: 0,
+    marginVertical: 0,
+    color: '#1A2330',
+  },
+  tabTextActive: {
+    color: '#fff',
+    fontSize: 17,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     padding: 20,
   },
   tabContent: {
@@ -1183,6 +1329,42 @@ const styles = StyleSheet.create({
   uploadSubtext: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  attachmentsList: {
+    marginTop: 16,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  attachmentItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  attachmentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  attachmentDetails: {
+    marginLeft: 12,
+  },
+  attachmentName: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  attachmentMeta: {
+    fontSize: 12,
+  },
+  downloadButton: {
+    padding: 8,
   },
   decisionItem: {
     padding: 12,

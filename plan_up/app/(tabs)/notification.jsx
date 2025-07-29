@@ -1,8 +1,8 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, FlatList } from 'react-native';
-import { Colors } from '../../constants/Colors.jsx';
-import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Colors } from '../../constants/Colors.jsx';
+import { useTheme } from '../../hooks/useTheme';
 
 const notificationData = [
   {
@@ -18,7 +18,7 @@ const notificationData = [
     id: '2',
     type: 'comment',
     title: 'New comment on issue',
-    message: 'John Doe commented on "Implement user dashboard"',
+    message: 'Franklin George commented on "Implement user dashboard"',
     time: '15 minutes ago',
     read: false,
     project: 'MAD',
@@ -80,8 +80,8 @@ const notificationColors = {
 };
 
 export default function NotificationScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
 
 
   const renderNotificationCard = ({ item }) => (

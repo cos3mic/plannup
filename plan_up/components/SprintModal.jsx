@@ -3,29 +3,30 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from 'react-native';
 import { Colors } from '../constants/Colors.jsx';
-import WorkingDatePicker from './WorkingDatePicker.jsx';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { useTheme } from '../hooks/useTheme';
 
-export default function SprintModal({ visible, onClose }) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+export default function SprintModal({ visible, onClose, onSprintCreated }) {
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   
   const [sprintName, setSprintName] = useState('');
   const [sprintGoal, setSprintGoal] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [dateField, setDateField] = useState(null); // 'start' or 'end'
+
+  if (!visible) return null;
 
   const handleCreateSprint = async () => {
     if (!sprintName.trim()) {
@@ -41,9 +42,23 @@ export default function SprintModal({ visible, onClose }) {
     setIsLoading(true);
     
     try {
-      // Here you would integrate with Jira/ClickUp APIs
-      // For now, we'll simulate the API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const newSprint = {
+        name: sprintName.trim(),
+        goal: sprintGoal.trim(),
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        status: 'planned',
+        velocity: 0,
+        capacity: 100,
+        issues: [],
+        teamMembers: [],
+      };
+      
+      if (onSprintCreated) {
+        onSprintCreated(newSprint);
+      }
       
       Alert.alert(
         'Success',
@@ -65,24 +80,18 @@ export default function SprintModal({ visible, onClose }) {
     onClose();
   };
 
-  const handleStartDateSelect = (date) => {
-    try {
-      console.log('Start date selected:', date);
-      setStartDate(date.toISOString().split('T')[0]);
-      setShowStartDatePicker(false);
-    } catch (error) {
-      console.error('Error in handleStartDateSelect:', error);
-    }
+  const showDatePicker = (field) => {
+    setDateField(field);
+    setDatePickerVisibility(true);
   };
-
-  const handleEndDateSelect = (date) => {
-    try {
-      console.log('End date selected:', date);
+  const hideDatePicker = () => setDatePickerVisibility(false);
+  const handleDateConfirm = (date) => {
+    if (dateField === 'start') {
+      setStartDate(date.toISOString().split('T')[0]);
+    } else if (dateField === 'end') {
       setEndDate(date.toISOString().split('T')[0]);
-      setShowEndDatePicker(false);
-    } catch (error) {
-      console.error('Error in handleEndDateSelect:', error);
     }
+    hideDatePicker();
   };
 
   const formatDate = (dateString) => {
@@ -97,191 +106,179 @@ export default function SprintModal({ visible, onClose }) {
   };
 
   return (
-    <>
-      <Modal
-        visible={visible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={handleClose}
-      >
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-          <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>
-              Create New Sprint
-            </Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
+    <View style={styles.overlay}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}> 
+        <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+          <Text style={[styles.headerTitle, { color: colors.text }]}> 
+            Create New Sprint 
+          </Text> 
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}> 
+            <Ionicons name="close" size={24} color={colors.text} /> 
+          </TouchableOpacity> 
+        </View> 
 
-          <ScrollView style={styles.content}>
-            {/* Sprint Name */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Sprint Name *
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.white,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
-                value={sprintName}
-                onChangeText={setSprintName}
-                placeholder="Enter sprint name"
-                placeholderTextColor={colors.textSecondary}
-              />
-            </View>
+        <ScrollView style={styles.content} keyboardShouldPersistTaps="handled"> 
+          {/* Sprint Name */} 
+          <View style={styles.section}> 
+            <Text style={[styles.sectionTitle, { color: colors.text }]}> 
+              Sprint Name * 
+            </Text> 
+            <TextInput 
+              style={[ 
+                styles.input, 
+                { 
+                  backgroundColor: colors.white, 
+                  borderColor: colors.border, 
+                  color: colors.text, 
+                }, 
+              ]} 
+              value={sprintName} 
+              onChangeText={setSprintName} 
+              placeholder="Enter sprint name" 
+              placeholderTextColor={colors.textSecondary} 
+            /> 
+          </View> 
 
-            {/* Sprint Goal */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Sprint Goal
-              </Text>
-              <TextInput
-                style={[
-                  styles.textArea,
-                  {
-                    backgroundColor: colors.white,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
-                value={sprintGoal}
-                onChangeText={setSprintGoal}
-                placeholder="What do you want to accomplish in this sprint?"
-                placeholderTextColor={colors.textSecondary}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            </View>
+          {/* Sprint Goal */} 
+          <View style={styles.section}> 
+            <Text style={[styles.sectionTitle, { color: colors.text }]}> 
+              Sprint Goal 
+            </Text> 
+            <TextInput 
+              style={[ 
+                styles.textArea, 
+                { 
+                  backgroundColor: colors.white, 
+                  borderColor: colors.border, 
+                  color: colors.text, 
+                }, 
+              ]} 
+              value={sprintGoal} 
+              onChangeText={setSprintGoal} 
+              placeholder="What do you want to accomplish in this sprint?" 
+              placeholderTextColor={colors.textSecondary} 
+              multiline 
+              numberOfLines={4} 
+              textAlignVertical="top" 
+            /> 
+          </View> 
 
-            {/* Start Date */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Start Date *
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.dateInput,
-                  {
-                    backgroundColor: colors.white,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => {
-                  console.log('Opening start date picker');
-                  setShowStartDatePicker(true);
-                }}
-              >
-                <View style={styles.dateInputContent}>
-                  <Ionicons name="calendar" size={20} color={colors.coral} />
-                  <Text style={[
-                    styles.dateInputText,
-                    { color: startDate ? colors.text : colors.textSecondary }
-                  ]}>
-                    {startDate ? formatDate(startDate) : 'Select start date'}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
+          {/* Start Date */} 
+          <View style={styles.section}> 
+            <Text style={[styles.sectionTitle, { color: colors.text }]}> 
+              Start Date * 
+            </Text> 
+            <TouchableOpacity 
+              style={[ 
+                styles.dateInput, 
+                { 
+                  backgroundColor: colors.white, 
+                  borderColor: colors.border, 
+                }, 
+              ]} 
+              onPress={() => showDatePicker('start')} 
+            > 
+              <View style={styles.dateInputContent}> 
+                <Ionicons name="calendar" size={20} color={colors.coral} /> 
+                <Text style={[ 
+                  styles.dateInputText, 
+                  { color: startDate ? colors.text : colors.textSecondary } 
+                ]}> 
+                  {startDate ? formatDate(startDate) : 'Select start date'} 
+                </Text> 
+              </View> 
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} /> 
+            </TouchableOpacity> 
+          </View> 
 
-            {/* End Date */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                End Date *
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.dateInput,
-                  {
-                    backgroundColor: colors.white,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => {
-                  console.log('Opening end date picker');
-                  setShowEndDatePicker(true);
-                }}
-              >
-                <View style={styles.dateInputContent}>
-                  <Ionicons name="calendar" size={20} color={colors.coral} />
-                  <Text style={[
-                    styles.dateInputText,
-                    { color: endDate ? colors.text : colors.textSecondary }
-                  ]}>
-                    {endDate ? formatDate(endDate) : 'Select end date'}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
+          {/* End Date */} 
+          <View style={styles.section}> 
+            <Text style={[styles.sectionTitle, { color: colors.text }]}> 
+              End Date * 
+            </Text> 
+            <TouchableOpacity 
+              style={[ 
+                styles.dateInput, 
+                { 
+                  backgroundColor: colors.white, 
+                  borderColor: colors.border, 
+                }, 
+              ]} 
+              onPress={() => showDatePicker('end')} 
+            > 
+              <View style={styles.dateInputContent}> 
+                <Ionicons name="calendar" size={20} color={colors.coral} /> 
+                <Text style={[ 
+                  styles.dateInputText, 
+                  { color: endDate ? colors.text : colors.textSecondary } 
+                ]}> 
+                  {endDate ? formatDate(endDate) : 'Select end date'} 
+                </Text> 
+              </View> 
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} /> 
+            </TouchableOpacity> 
+          </View> 
 
-            {/* Sprint Info */}
-            <View style={[styles.infoCard, { backgroundColor: colors.white }]}>
-              <Ionicons name="information-circle" size={20} color={colors.blue} />
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                Sprints typically last 1-4 weeks and help teams focus on specific goals.
-              </Text>
-            </View>
-          </ScrollView>
+          {/* Sprint Info */} 
+          <View style={[styles.infoCard, { backgroundColor: colors.white }]}> 
+            <Ionicons name="information-circle" size={20} color={colors.blue} /> 
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}> 
+              Sprints typically last 1-4 weeks and help teams focus on specific goals. 
+            </Text> 
+          </View> 
+        </ScrollView> 
 
-          <View style={[styles.footer, { borderTopColor: colors.border }]}>
-            <TouchableOpacity
-              style={[styles.cancelButton, { borderColor: colors.border }]}
-              onPress={handleClose}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.text }]}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.createButton,
-                {
-                  backgroundColor: isLoading ? colors.textSecondary : colors.coral,
-                },
-              ]}
-              onPress={handleCreateSprint}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.createButtonText}>Create Sprint</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Working Date Pickers */}
-      <WorkingDatePicker
-        visible={showStartDatePicker}
-        onClose={() => setShowStartDatePicker(false)}
-        onDateSelected={handleStartDateSelect}
-        title="Select Start Date"
-        minDate={new Date()}
+        <View style={[styles.footer, { borderTopColor: colors.border }]}> 
+          <TouchableOpacity 
+            style={[styles.cancelButton, { borderColor: colors.border }]} 
+            onPress={handleClose} 
+          > 
+            <Text style={[styles.cancelButtonText, { color: colors.text }]}> 
+              Cancel 
+            </Text> 
+          </TouchableOpacity> 
+          
+          <TouchableOpacity 
+            style={[ 
+              styles.createButton, 
+              { 
+                backgroundColor: isLoading ? colors.textSecondary : colors.coral, 
+              }, 
+            ]} 
+            onPress={handleCreateSprint} 
+            disabled={isLoading} 
+          > 
+            {isLoading ? ( 
+              <ActivityIndicator color="#fff" size="small" /> 
+            ) : ( 
+              <Text style={styles.createButtonText}>Create Sprint</Text> 
+            )} 
+          </TouchableOpacity> 
+        </View> 
+      </View>
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+        mode="date"
+        onConfirm={handleDateConfirm}
+        onCancel={hideDatePicker}
+        minimumDate={dateField === 'end' && startDate ? new Date(startDate) : new Date()}
       />
-
-      <WorkingDatePicker
-        visible={showEndDatePicker}
-        onClose={() => setShowEndDatePicker(false)}
-        onDateSelected={handleEndDateSelect}
-        title="Select End Date"
-        minDate={startDate ? new Date(startDate) : new Date()}
-      />
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    zIndex: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
   },
