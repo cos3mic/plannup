@@ -7,6 +7,8 @@ import planup.backend.repository.IssueRepository;
 import planup.backend.repository.CommentRepository;
 import planup.backend.repository.TimeLogRepository;
 import planup.backend.repository.AttachmentRepository;
+import planup.backend.repository.SubTaskRepository;
+import planup.backend.repository.IssueLinkRepository;
 
 import java.util.Date;
 import java.util.List;
@@ -19,6 +21,8 @@ public class IssueService {
     private final CommentRepository commentRepository;
     private final TimeLogRepository timeLogRepository;
     private final AttachmentRepository attachmentRepository;
+    private final SubTaskRepository subTaskRepository;
+    private final IssueLinkRepository issueLinkRepository;
 
     public List<Issue> getAllIssues() {
         return issueRepository.findAll();
@@ -127,6 +131,55 @@ public class IssueService {
 
     public void deleteTimeLog(String timeLogId) {
         timeLogRepository.deleteById(timeLogId);
+    }
+
+    // Sub-task operations
+    public SubTask addSubTask(String issueId, SubTask subTask) {
+        subTask.setParentIssueId(issueId);
+        subTask.setCreatedAt(new Date());
+        subTask.setUpdatedAt(new Date());
+        subTask.setActive(true);
+        SubTask saved = subTaskRepository.save(subTask);
+        issueRepository.findById(issueId).ifPresent(i -> {
+            i.getSubTaskIds().add(saved.getId());
+            i.setUpdated(new Date());
+            issueRepository.save(i);
+        });
+        return saved;
+    }
+
+    public List<SubTask> getSubTasksByIssue(String issueId) {
+        return subTaskRepository.findByParentIssueId(issueId);
+    }
+
+    public SubTask updateSubTask(String subTaskId, SubTask subTask) {
+        subTask.setId(subTaskId);
+        subTask.setUpdatedAt(new Date());
+        return subTaskRepository.save(subTask);
+    }
+
+    public void deleteSubTask(String subTaskId) {
+        subTaskRepository.deleteById(subTaskId);
+    }
+
+    // Issue-link operations
+    public IssueLink addIssueLink(String sourceIssueId, IssueLink link) {
+        link.setSourceIssueId(sourceIssueId);
+        link.setCreatedAt(new Date());
+        IssueLink saved = issueLinkRepository.save(link);
+        issueRepository.findById(sourceIssueId).ifPresent(i -> {
+            i.getLinkedIssueIds().add(saved.getId());
+            issueRepository.save(i);
+        });
+        return saved;
+    }
+
+    public List<IssueLink> getIssueLinksByIssue(String issueId) {
+        return issueLinkRepository.findBySourceIssueIdOrTargetIssueId(issueId, issueId);
+    }
+
+    public void deleteIssueLink(String linkId) {
+        issueLinkRepository.deleteById(linkId);
     }
 
     // Attachment operations

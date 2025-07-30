@@ -1,36 +1,57 @@
 package planup.backend.model;
 
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import java.util.Objects;
 
-import java.util.Date;
-import java.util.List;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@Document(collection = "projects")
+@Entity
 public class Project {
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String name;
-    private String key; // Project key like MAD, WRD, etc.
+    private String key;
     private String description;
     private String color;
-    private String leadId; // User ID of the project lead
-    private String organizationId;
-    private int progress; // 0-100
-    private int issueCount;
-    private List<String> memberIds; // User IDs who have access
-    private List<String> componentIds; // Component IDs
-    private List<String> roleIds; // Role IDs
-    private List<String> workflowIds; // Workflow IDs
-    private List<String> templateIds; // Template IDs
-    private Date createdAt;
-    private Date updatedAt;
-    private boolean isActive;
-    private String settings; // JSON string for project settings
-    private List<String> decisionLog; // Decision log entries
+    private String lead;
+    private String template;
+    private int progress;
+    private int issues;
+
+    // Getters and setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getKey() { return key; }
+    public void setKey(String key) { this.key = key; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
+    public String getLead() { return lead; }
+    public void setLead(String lead) { this.lead = lead; }
+    public String getTemplate() { return template; }
+    public void setTemplate(String template) { this.template = template; }
+    public int getProgress() { return progress; }
+    public void setProgress(int progress) { this.progress = progress; }
+    public int getIssues() { return issues; }
+    public void setIssues(int issues) { this.issues = issues; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Project project = (Project) o;
+        return Objects.equals(id, project.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 } 

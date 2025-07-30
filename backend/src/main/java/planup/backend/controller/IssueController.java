@@ -5,78 +5,119 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import planup.backend.model.*;
 import planup.backend.service.IssueService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import jakarta.validation.Valid;
+import planup.backend.dto.IssueRequest;
+import planup.backend.dto.IssueResponse;
+import planup.backend.mapper.IssueMapper;
 
 @RestController
-@RequestMapping("/api/issues")
+@RequestMapping("/issues")
 @RequiredArgsConstructor
 public class IssueController {
     private final IssueService issueService;
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @GetMapping
-    public List<Issue> getAllIssues() {
-        return issueService.getAllIssues();
+    public List<IssueResponse> getAllIssues() {
+        return issueService.getAllIssues()
+                .stream()
+                .map(IssueMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Issue> getIssueById(@PathVariable String id) {
+    public ResponseEntity<IssueResponse> getIssueById(@PathVariable String id) {
         return issueService.getIssueById(id)
+                .map(IssueMapper::toResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/key/{key}")
-    public ResponseEntity<Issue> getIssueByKey(@PathVariable String key) {
+    public ResponseEntity<IssueResponse> getIssueByKey(@PathVariable String key) {
         return issueService.getIssueByKey(key)
+                .map(IssueMapper::toResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/project/{projectId}")
-    public List<Issue> getIssuesByProject(@PathVariable String projectId) {
-        return issueService.getIssuesByProject(projectId);
+    public List<IssueResponse> getIssuesByProject(@PathVariable String projectId) {
+        return issueService.getIssuesByProject(projectId)
+                .stream()
+                .map(IssueMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/assignee/{assigneeId}")
-    public List<Issue> getIssuesByAssignee(@PathVariable String assigneeId) {
-        return issueService.getIssuesByAssignee(assigneeId);
+    public List<IssueResponse> getIssuesByAssignee(@PathVariable String assigneeId) {
+        return issueService.getIssuesByAssignee(assigneeId)
+                .stream()
+                .map(IssueMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/status/{status}")
-    public List<Issue> getIssuesByStatus(@PathVariable String status) {
-        return issueService.getIssuesByStatus(status);
+    public List<IssueResponse> getIssuesByStatus(@PathVariable String status) {
+        return issueService.getIssuesByStatus(status)
+                .stream()
+                .map(IssueMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/priority/{priority}")
-    public List<Issue> getIssuesByPriority(@PathVariable String priority) {
-        return issueService.getIssuesByPriority(priority);
+    public List<IssueResponse> getIssuesByPriority(@PathVariable String priority) {
+        return issueService.getIssuesByPriority(priority)
+                .stream()
+                .map(IssueMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/type/{type}")
-    public List<Issue> getIssuesByType(@PathVariable String type) {
-        return issueService.getIssuesByType(type);
+    public List<IssueResponse> getIssuesByType(@PathVariable String type) {
+        return issueService.getIssuesByType(type)
+                .stream()
+                .map(IssueMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/sprint/{sprintId}")
-    public List<Issue> getIssuesBySprint(@PathVariable String sprintId) {
-        return issueService.getIssuesBySprint(sprintId);
+    public List<IssueResponse> getIssuesBySprint(@PathVariable String sprintId) {
+        return issueService.getIssuesBySprint(sprintId)
+                .stream()
+                .map(IssueMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/epic/{epicId}")
-    public List<Issue> getIssuesByEpic(@PathVariable String epicId) {
-        return issueService.getIssuesByEpic(epicId);
+    public List<IssueResponse> getIssuesByEpic(@PathVariable String epicId) {
+        return issueService.getIssuesByEpic(epicId)
+                .stream()
+                .map(IssueMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @PostMapping
-    public Issue createIssue(@RequestBody Issue issue) {
-        return issueService.createIssue(issue);
+    public IssueResponse createIssue(@Valid @RequestBody IssueRequest request) {
+        Issue created = issueService.createIssue(IssueMapper.toEntity(request));
+        return IssueMapper.toResponse(created);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Issue> updateIssue(@PathVariable String id, @RequestBody Issue issue) {
+    public ResponseEntity<IssueResponse> updateIssue(@PathVariable String id, @Valid @RequestBody IssueRequest request) {
         return issueService.getIssueById(id)
-                .map(existingIssue -> ResponseEntity.ok(issueService.updateIssue(id, issue)))
+                .map(existing -> {
+                    Issue updated = issueService.updateIssue(id, IssueMapper.toEntity(request));
+                    return ResponseEntity.ok(IssueMapper.toResponse(updated));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -152,8 +193,23 @@ public class IssueController {
 
     // Search endpoints
     @GetMapping("/search")
-    public List<Issue> searchIssues(@RequestParam String query) {
-        return issueService.searchIssues(query);
+    public List<Issue> searchIssues(
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) String assignee,
+        @RequestParam(required = false) String projectId,
+        @RequestParam(required = false) String sprintId,
+        @RequestParam(required = false) String text
+    ) {
+        Query query = new Query();
+        if (status != null) query.addCriteria(Criteria.where("status").is(status));
+        if (assignee != null) query.addCriteria(Criteria.where("assignee").is(assignee));
+        if (projectId != null) query.addCriteria(Criteria.where("projectId").is(projectId));
+        if (sprintId != null) query.addCriteria(Criteria.where("sprintId").is(sprintId));
+        if (text != null) query.addCriteria(new Criteria().orOperator(
+            Criteria.where("title").regex(text, "i"),
+            Criteria.where("description").regex(text, "i")
+        ));
+        return mongoTemplate.find(query, Issue.class);
     }
 
     @GetMapping("/labels")

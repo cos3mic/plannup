@@ -8,8 +8,8 @@ import planup.backend.service.SprintService;
 import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 import planup.backend.model.SprintDTO;
-
 import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/sprints")

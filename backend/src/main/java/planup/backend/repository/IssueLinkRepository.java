@@ -11,4 +11,5 @@ public interface IssueLinkRepository extends MongoRepository<IssueLink, String> 
     List<IssueLink> findByLinkType(String linkType);
     List<IssueLink> findByCreatedById(String createdById);
     List<IssueLink> findByIsActiveTrue();
+    List<IssueLink> findBySourceIssueIdOrTargetIssueId(String sourceIssueId, String targetIssueId);
 } 
