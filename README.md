@@ -39,7 +39,7 @@ Create the following files (samples are committed):
 cd backend
 mvn spring-boot:run
 ```
-REST API is now available at `http://localhost:8080`.
+
 
 ### 4. Run Mobile App
 ```bash
@@ -86,7 +86,7 @@ plannup/
 
 ### Coding Standards
 * Backend: Spring Boot best-practices, Lombok, Jakarta Validation.  
-* Frontend: ESLint (Expo), TypeScript strict mode.
+* Frontend: ESLint (Expo), Javascript strict mode.
 
 ---
 
