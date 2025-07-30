@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "plan_up",
+    "name": "planup",
     "slug": "plan_up",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.henryanomah.plan_up"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +38,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "73e49032-462f-4785-bca0-3576543dd1ae"
+      }
+    },
+    "owner": "henryanomah"
   }
 }
